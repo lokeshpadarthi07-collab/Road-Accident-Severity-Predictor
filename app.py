@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import pydeck as pdk
+import folium
+import streamlit.components.v1 as components
 
 # Set page config
 st.set_page_config(
@@ -736,19 +738,22 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 "danger blackspots, and mandatory safe speed limits."
             )
 
-        # Section C: Interactive Map Controls
+        # Section C: Interactive Map of India with Highway Corridors & Danger Areas
         st.markdown("---")
         st.markdown("#### 🗺️ Map of India: Highway Network Routes & Danger Blackspots")
 
-        map_c1, map_c2, map_c3, map_c4 = st.columns([1.3, 1.1, 1.1, 1.1])
-        with map_c1:
-            show_highways = st.checkbox("🛣️ Show Highway Routes (PathLayer)", value=True)
-        with map_c2:
-            show_pillars = st.checkbox("🗼 Show 3D Danger Pillars (ColumnLayer)", value=True)
-        with map_c3:
-            show_rings = st.checkbox("⭕ Show Danger Warning Rings", value=True)
-        with map_c4:
-            show_labels = st.checkbox("🏷️ Show Danger Badges", value=True)
+        # Map Engine Mode Selector
+        map_engine_col1, map_engine_col2 = st.columns([2.2, 1.8])
+        with map_engine_col1:
+            map_view_engine = st.radio(
+                "Select Map View Mode:",
+                [
+                    "🗺️ Clear Geographic Road Map (OpenStreetMap / Folium) — Official States & Borders",
+                    "🌐 3D Perspective Elevation Map (PyDeck WebGL)"
+                ],
+                index=0,
+                horizontal=True
+            )
 
         # Build blackspot area nodes for on-map location callouts
         area_summary_list = []
@@ -758,10 +763,14 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             adv_spd = grp["advisory_safe_speed_kmh"].iloc[0]
             d_lvl = grp["danger_level"].iloc[0] if "danger_level" in grp.columns else "High Danger"
             hwy = grp["highway_name"].iloc[0].split("(")[0].strip()
+            cause_desc = grp["primary_cause"].iloc[0]
+            code = grp["morth_blackspot_id"].iloc[0]
             area_summary_list.append({
                 "area_name": aname,
                 "highway_name": hwy,
                 "danger_level": d_lvl,
+                "primary_cause": cause_desc,
+                "morth_blackspot_id": code,
                 "latitude": float(grp["latitude"].mean()),
                 "longitude": float(grp["longitude"].mean()),
                 "total_accidents": tot,
@@ -771,181 +780,313 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             })
         blackspots_nodes_df = pd.DataFrame(area_summary_list)
 
-        # Prepare Highway Network PathLayer Data
-        path_records = []
-        for h in highway_routes:
-            # Check if this highway is active
-            h_matched = False
-            if active_query:
-                if (active_query.lower() in h["short_name"].lower() or 
-                    active_query.lower() in h["highway_name"].lower() or 
-                    active_query.lower() in h["highway_id"].lower()):
-                    h_matched = True
-
-            if is_filtered and h_matched:
-                line_color = [239, 68, 68, 255]     # Highlight in vibrant red
-                line_width = 8
-            elif is_filtered and not h_matched:
-                line_color = [100, 116, 139, 120]   # Subtle gray background
-                line_width = 2
-            else:
-                line_color = h["color"]              # Standard distinct color
-                line_width = 4
-
-            path_records.append({
-                "highway_id": h["highway_id"],
-                "highway_name": h["highway_name"],
-                "short_name": h["short_name"],
-                "category": h["category"],
-                "length_km": h["length_km"],
-                "danger_level": h["danger_level"],
-                "total_blackspots": h["total_blackspots"],
-                "description": h["description"],
-                "color": line_color,
-                "width": line_width,
-                "path": h["path"]
-            })
-
-        # Calculate Camera Viewport
+        # Calculate map center and zoom level
         if is_filtered and len(filtered_india) > 0:
             center_lat = float(np.mean(filtered_india["latitude"]))
             center_lon = float(np.mean(filtered_india["longitude"]))
-            zoom = 9.8 if len(filtered_india) < 600 else 6.5
-            pitch = 45
+            zoom_folium = 9 if len(filtered_india) < 600 else 6
+            zoom_pdk = 9.8 if len(filtered_india) < 600 else 6.5
         else:
-            center_lat, center_lon, zoom = 22.0, 79.0, 4.6
-            pitch = 38
+            center_lat, center_lon = 22.2, 79.5
+            zoom_folium = 5
+            zoom_pdk = 4.6
 
-        view_state = pdk.ViewState(
-            latitude=center_lat,
-            longitude=center_lon,
-            zoom=zoom,
-            pitch=pitch,
-            bearing=10
-        )
+        # MODE 1: CLEAR GEOGRAPHIC ROAD MAP (OPENSTREETMAP / FOLIUM)
+        if map_view_engine.startswith("🗺️ Clear Geographic"):
+            folium_ctrl1, folium_ctrl2, folium_ctrl3 = st.columns([1.5, 1.2, 1.3])
+            with folium_ctrl1:
+                tile_style = st.selectbox(
+                    "Clear Basemap Layer:",
+                    ["OpenStreetMap (Clear Colorful Road Map & State Borders)", "CartoDB Positron (High-Contrast Clean White)", "CartoDB Dark_Matter (Night Mode)"]
+                )
+            with folium_ctrl2:
+                show_folium_highways = st.checkbox("🛣️ Show Highway Corridors", value=True)
+            with folium_ctrl3:
+                show_folium_blackspots = st.checkbox("🔴 Show Danger Blackspots", value=True)
 
-        layers_to_render = []
+            tile_key = "OpenStreetMap"
+            if "Positron" in tile_style:
+                tile_key = "CartoDB positron"
+            elif "Dark_Matter" in tile_style:
+                tile_key = "CartoDB dark_matter"
 
-        # Layer 1: Highway Network Polylines (PathLayer)
-        if show_highways and len(path_records) > 0:
-            highway_layer = pdk.Layer(
-                "PathLayer",
-                data=path_records,
-                get_path="path",
-                get_color="color",
-                get_width="width",
-                width_scale=20,
-                width_min_pixels=3,
-                width_max_pixels=14,
-                rounded=True,
-                joint_rounded=True,
-                pickable=True,
-                auto_highlight=True,
+            # Create Folium Map with clean India view
+            fmap = folium.Map(
+                location=[center_lat, center_lon],
+                zoom_start=zoom_folium,
+                tiles=tile_key,
+                control_scale=True,
+                prefer_canvas=True
             )
-            layers_to_render.append(highway_layer)
 
-        # Layer 2: 3D Danger Blackspots (ColumnLayer)
-        if show_pillars and len(filtered_india) > 0:
-            def get_elevation(row):
-                sev = row["accident_severity"]
-                spd = row["recorded_speed_kmh"]
-                if sev == "Fatal":
-                    return 2400 + (spd * 14)
-                elif sev == "Serious":
-                    return 1200 + (spd * 8)
-                return 400 + (spd * 3)
+            # Define vibrant color palette for highways in Folium
+            HWY_HEX_COLORS = {
+                "NH-44": "#0284c7",          # Vivid Blue
+                "NH-48": "#d97706",          # Amber
+                "MUM-PUN-EXP": "#dc2626",    # Crimson Red
+                "YAM-EXP": "#e11d48",        # Rose
+                "NH-66": "#9333ea",          # Purple
+                "SAMRUDDHI-EXP": "#059669",  # Emerald
+                "NH-16": "#2563eb",          # Royal Blue
+                "NH-19": "#ca8a04",          # Gold
+                "HYD-ORR": "#6366f1",        # Indigo
+                "NE-4-EXP": "#0d9488"        # Teal
+            }
 
-            def get_pillar_color(sev):
-                if sev == "Fatal":
-                    return [239, 68, 68, 230]     # Red
-                elif sev == "Serious":
-                    return [249, 115, 22, 200]   # Orange
-                return [234, 179, 8, 170]        # Yellow
+            # Render Highway Polylines on Folium Map
+            if show_folium_highways:
+                for h in highway_routes:
+                    hid = h["highway_id"]
+                    # Deck.gl has [lon, lat], Folium requires [lat, lon]
+                    lat_lon_path = [[pt[1], pt[0]] for pt in h["path"]]
 
-            plot_df = filtered_india.copy()
-            plot_df["elevation"] = plot_df.apply(get_elevation, axis=1)
-            plot_df["color"] = plot_df["accident_severity"].apply(get_pillar_color)
+                    h_matched = False
+                    if active_query:
+                        if (active_query.lower() in h["short_name"].lower() or 
+                            active_query.lower() in h["highway_name"].lower() or 
+                            active_query.lower() in h["highway_id"].lower()):
+                            h_matched = True
 
-            layer_3d = pdk.Layer(
-                "ColumnLayer",
-                data=plot_df,
-                get_position=["longitude", "latitude"],
-                get_elevation="elevation",
-                elevation_scale=1.5,
-                radius=650 if not is_filtered else 220,
-                get_fill_color="color",
-                pickable=True,
-                auto_highlight=True,
-                extruded=True,
+                    if is_filtered and h_matched:
+                        line_color = "#ef4444"
+                        line_weight = 7
+                        line_opacity = 1.0
+                    elif is_filtered and not h_matched:
+                        line_color = "#94a3b8"
+                        line_weight = 3
+                        line_opacity = 0.55
+                    else:
+                        line_color = HWY_HEX_COLORS.get(hid, "#3b82f6")
+                        line_weight = 5
+                        line_opacity = 0.85
+
+                    hwy_popup_html = f"""
+                    <div style="font-family: system-ui, sans-serif; font-size: 0.95rem; min-width: 240px; padding: 4px;">
+                        <h4 style="margin: 0 0 6px 0; color: #1e3a8a;">{h['highway_name']}</h4>
+                        <b>Length:</b> {h['length_km']:,} km<br/>
+                        <b>Category:</b> {h['category']}<br/>
+                        <b>Danger Rating:</b> <span style="color: #dc2626; font-weight: bold;">{h['danger_level']}</span><br/>
+                        <b>MoRTH Blackspots:</b> {h['total_blackspots']} Stretches<br/>
+                        <p style="margin: 6px 0 0 0; font-size: 0.85rem; color: #475569;">{h['description']}</p>
+                    </div>
+                    """
+
+                    folium.PolyLine(
+                        lat_lon_path,
+                        color=line_color,
+                        weight=line_weight,
+                        opacity=line_opacity,
+                        tooltip=f"🛣️ {h['short_name']} ({h['length_km']:,} km) - {h['danger_level']}",
+                        popup=folium.Popup(hwy_popup_html, max_width=320)
+                    ).add_to(fmap)
+
+            # Render Danger Blackspot Markers on Folium Map
+            if show_folium_blackspots and len(blackspots_nodes_df) > 0:
+                for _, b in blackspots_nodes_df.iterrows():
+                    tot = b["total_accidents"]
+                    fat = b["fatal_accidents"]
+                    adv = b["advisory_speed"]
+                    area = b["area_name"]
+                    hwy = b["highway_name"]
+                    code = b["morth_blackspot_id"]
+                    cause = b["primary_cause"]
+                    d_lvl = b["danger_level"]
+
+                    popup_html = f"""
+                    <div style="font-family: system-ui, sans-serif; min-width: 260px; padding: 6px;">
+                        <div style="background: #991b1b; color: white; padding: 6px 10px; border-radius: 6px; font-weight: bold; margin-bottom: 8px;">
+                            🛑 {area}
+                        </div>
+                        <div style="font-size: 0.9rem; line-height: 1.5; color: #1e293b;">
+                            <b>Highway:</b> {hwy}<br/>
+                            <b>MoRTH Blackspot Code:</b> <code>{code}</code><br/>
+                            <b>Danger Level:</b> <span style="color: #b91c1c; font-weight: bold;">{d_lvl}</span><br/>
+                            <b>Recorded Crashes:</b> {tot} collisions (<strong>{fat} Fatalities</strong>)<br/>
+                            <div style="margin: 6px 0; background: #ecfdf5; border-left: 4px solid #10b981; padding: 5px 8px; border-radius: 4px;">
+                                🟢 <b>Safe Advisory Speed:</b> <span style="color: #065f46; font-weight: bold; font-size: 1.05rem;">{adv} km/h</span>
+                            </div>
+                            <b>Primary Hazard:</b> {cause}
+                        </div>
+                    </div>
+                    """
+
+                    # Pulsing circle marker
+                    folium.CircleMarker(
+                        location=[b["latitude"], b["longitude"]],
+                        radius=11 if is_filtered else 8,
+                        color="#991b1b",
+                        weight=2.5,
+                        fill=True,
+                        fill_color="#ef4444",
+                        fill_opacity=0.85,
+                        tooltip=f"⚠️ {area.split('(')[0].strip()}: {tot} Crashes ({fat} Fatal) | GO ≤ {adv} km/h",
+                        popup=folium.Popup(popup_html, max_width=320)
+                    ).add_to(fmap)
+
+            # Embed Folium map with full interactivity
+            components.html(fmap._repr_html_(), height=660)
+            st.caption(
+                f"Showing **Clear Map of India** with {len(highway_routes)} major highway corridors traversing states, "
+                f"and {len(blackspots_nodes_df)} official MoRTH high-risk blackspots. Click any highway or danger circle for full safety details."
             )
-            layers_to_render.append(layer_3d)
 
-        # Layer 3: Danger Perimeter Radii (ScatterplotLayer)
-        if show_rings and len(blackspots_nodes_df) > 0:
-            ring_layer = pdk.Layer(
-                "ScatterplotLayer",
-                data=blackspots_nodes_df,
-                get_position=["longitude", "latitude"],
-                get_radius=3400 if not is_filtered else 1100,
-                get_fill_color=[239, 68, 68, 40],
-                get_line_color=[239, 68, 68, 255],
-                stroked=True,
-                filled=True,
-                line_width_min_pixels=2.5,
-                pickable=True,
+        # MODE 2: 3D PERSPECTIVE ELEVATION MAP (PYDECK WEBGL)
+        else:
+            map_c1, map_c2, map_c3, map_c4 = st.columns([1.3, 1.1, 1.1, 1.1])
+            with map_c1:
+                show_highways = st.checkbox("🛣️ Show Highway Routes", value=True)
+            with map_c2:
+                show_pillars = st.checkbox("🗼 Show 3D Danger Pillars", value=True)
+            with map_c3:
+                show_rings = st.checkbox("⭕ Show Danger Rings", value=True)
+            with map_c4:
+                pdk_style_choice = st.selectbox("3D Basemap:", ["Clear Light (Carto Positron)", "Dark Mode (Carto Dark)"])
+
+            pdk_map_style = pdk.map_styles.CARTO_LIGHT if "Light" in pdk_style_choice else pdk.map_styles.CARTO_DARK
+
+            # Prepare Highway Network PathLayer Data
+            path_records = []
+            for h in highway_routes:
+                h_matched = False
+                if active_query:
+                    if (active_query.lower() in h["short_name"].lower() or 
+                        active_query.lower() in h["highway_name"].lower() or 
+                        active_query.lower() in h["highway_id"].lower()):
+                        h_matched = True
+
+                if is_filtered and h_matched:
+                    line_color = [239, 68, 68, 255]
+                    line_width = 8
+                elif is_filtered and not h_matched:
+                    line_color = [100, 116, 139, 120]
+                    line_width = 2
+                else:
+                    line_color = h["color"]
+                    line_width = 4
+
+                path_records.append({
+                    "highway_id": h["highway_id"],
+                    "highway_name": h["highway_name"],
+                    "short_name": h["short_name"],
+                    "category": h["category"],
+                    "length_km": h["length_km"],
+                    "danger_level": h["danger_level"],
+                    "total_blackspots": h["total_blackspots"],
+                    "description": h["description"],
+                    "color": line_color,
+                    "width": line_width,
+                    "path": h["path"]
+                })
+
+            view_state = pdk.ViewState(
+                latitude=center_lat,
+                longitude=center_lon,
+                zoom=zoom_pdk,
+                pitch=42,
+                bearing=10
             )
-            layers_to_render.append(ring_layer)
 
-        # Layer 4: On-Map Danger Badges (TextLayer)
-        if show_labels and len(blackspots_nodes_df) > 0:
-            text_layer = pdk.Layer(
-                "TextLayer",
-                data=blackspots_nodes_df,
-                get_position=["longitude", "latitude"],
-                get_text="map_label",
-                get_size=11 if not is_filtered else 13,
-                get_color=[255, 255, 255, 255],
-                get_background_color=[15, 23, 42, 235],
-                get_alignment_baseline="'bottom'",
-                get_text_anchor="'middle'",
-                get_pixel_offset=[0, -32],
-                background_padding=[4, 8],
-                font_family="system-ui, sans-serif",
-                font_weight="bold",
-                pickable=True,
+            layers_to_render = []
+
+            # Layer 1: Highway Network Polylines (PathLayer)
+            if show_highways and len(path_records) > 0:
+                highway_layer = pdk.Layer(
+                    "PathLayer",
+                    data=path_records,
+                    get_path="path",
+                    get_color="color",
+                    get_width="width",
+                    width_scale=20,
+                    width_min_pixels=3,
+                    width_max_pixels=14,
+                    rounded=True,
+                    joint_rounded=True,
+                    pickable=True,
+                    auto_highlight=True,
+                )
+                layers_to_render.append(highway_layer)
+
+            # Layer 2: 3D Danger Blackspots (ColumnLayer)
+            if show_pillars and len(filtered_india) > 0:
+                def get_elevation(row):
+                    sev = row["accident_severity"]
+                    spd = row["recorded_speed_kmh"]
+                    if sev == "Fatal":
+                        return 2400 + (spd * 14)
+                    elif sev == "Serious":
+                        return 1200 + (spd * 8)
+                    return 400 + (spd * 3)
+
+                def get_pillar_color(sev):
+                    if sev == "Fatal":
+                        return [239, 68, 68, 230]
+                    elif sev == "Serious":
+                        return [249, 115, 22, 200]
+                    return [234, 179, 8, 170]
+
+                plot_df = filtered_india.copy()
+                plot_df["elevation"] = plot_df.apply(get_elevation, axis=1)
+                plot_df["color"] = plot_df["accident_severity"].apply(get_pillar_color)
+
+                layer_3d = pdk.Layer(
+                    "ColumnLayer",
+                    data=plot_df,
+                    get_position=["longitude", "latitude"],
+                    get_elevation="elevation",
+                    elevation_scale=1.5,
+                    radius=650 if not is_filtered else 220,
+                    get_fill_color="color",
+                    pickable=True,
+                    auto_highlight=True,
+                    extruded=True,
+                )
+                layers_to_render.append(layer_3d)
+
+            # Layer 3: Danger Perimeter Radii (ScatterplotLayer)
+            if show_rings and len(blackspots_nodes_df) > 0:
+                ring_layer = pdk.Layer(
+                    "ScatterplotLayer",
+                    data=blackspots_nodes_df,
+                    get_position=["longitude", "latitude"],
+                    get_radius=3400 if not is_filtered else 1100,
+                    get_fill_color=[239, 68, 68, 40],
+                    get_line_color=[239, 68, 68, 255],
+                    stroked=True,
+                    filled=True,
+                    line_width_min_pixels=2.5,
+                    pickable=True,
+                )
+                layers_to_render.append(ring_layer)
+
+            tooltip_dict = {
+                "html": (
+                    "<div style='background-color: #0f172a; color: white; padding: 12px; border-radius: 8px; font-family: system-ui, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-width: 320px;'>"
+                    "{area_name}"
+                    "<div style='font-size: 0.9rem; margin-top: 4px;'>"
+                    "<b>Highway:</b> {highway_name}<br/>"
+                    "<b>Severity:</b> <span style='color: #f87171; font-weight: bold;'>{accident_severity}</span><br/>"
+                    "<b>Recorded Speed:</b> {recorded_speed_kmh} km/h (Posted: {posted_speed_kmh} km/h)<br/>"
+                    "<b style='color: #4ade80;'>Advisory Safe Speed:</b> <b>{advisory_safe_speed_kmh} km/h</b><br/>"
+                    "<b>Danger Hazard:</b> <span style='color: #fde047;'>{primary_cause}</span><br/>"
+                    "<small style='color: #94a3b8;'>MoRTH Code: {morth_blackspot_id}</small>"
+                    "</div>"
+                    "</div>"
+                ),
+                "style": {"backgroundColor": "transparent"}
+            }
+
+            st.pydeck_chart(
+                pdk.Deck(
+                    map_style=pdk_map_style,
+                    initial_view_state=view_state,
+                    layers=layers_to_render,
+                    tooltip=tooltip_dict
+                )
             )
-            layers_to_render.append(text_layer)
-
-        # Interactive Map Tooltip for DeckGL
-        tooltip_dict = {
-            "html": (
-                "<div style='background-color: #0f172a; color: white; padding: 12px; border-radius: 8px; font-family: system-ui, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-width: 320px;'>"
-                "{area_name}"
-                "<div style='font-size: 0.9rem; margin-top: 4px;'>"
-                "<b>Highway:</b> {highway_name}<br/>"
-                "<b>Severity:</b> <span style='color: #f87171; font-weight: bold;'>{accident_severity}</span><br/>"
-                "<b>Recorded Speed:</b> {recorded_speed_kmh} km/h (Posted: {posted_speed_kmh} km/h)<br/>"
-                "<b style='color: #4ade80;'>Advisory Safe Speed:</b> <b>{advisory_safe_speed_kmh} km/h</b><br/>"
-                "<b>Danger Hazard:</b> <span style='color: #fde047;'>{primary_cause}</span><br/>"
-                "<small style='color: #94a3b8;'>MoRTH Code: {morth_blackspot_id}</small>"
-                "</div>"
-                "</div>"
-            ),
-            "style": {"backgroundColor": "transparent"}
-        }
-
-        st.pydeck_chart(
-            pdk.Deck(
-                map_style="mapbox://styles/mapbox/dark-v10",
-                initial_view_state=view_state,
-                layers=layers_to_render,
-                tooltip=tooltip_dict
+            st.caption(
+                f"Displaying **{len(path_records)} National Highway & Expressway corridors** traversing India and "
+                f"**{len(filtered_india):,} accident records** in 3D perspective with Carto high-visibility tiles."
             )
-        )
-        st.caption(
-            f"Displaying **{len(path_records)} National Highway & Expressway corridors** traversing India and "
-            f"**{len(filtered_india):,} accident records** with 3D collision towers and MoRTH blackspot danger perimeters."
-        )
 
         # Section D: Indian National Highway Danger Registry & Corridor Comparison
         st.markdown("---")
