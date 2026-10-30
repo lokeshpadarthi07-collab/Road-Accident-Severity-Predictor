@@ -23,3 +23,4 @@ services:
     volumes:
       - ./models:/app/models
       - ./config:/app/config
+

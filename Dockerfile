@@ -30,3 +30,4 @@ EXPOSE 8501 8000
 
 # Default command launches Streamlit application
 CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+

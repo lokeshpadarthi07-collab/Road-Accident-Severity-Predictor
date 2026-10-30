@@ -76,3 +76,4 @@ def test_api_predict_invalid_speed(client):
     }
     response = client.post("/predict", json=invalid_payload)
     assert response.status_code == 422  # Unprocessable Entity (Pydantic validation failure)
+
