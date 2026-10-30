@@ -1,0 +1,280 @@
+{
+  "project_name": "Road Accident Severity Predictor",
+  "project_version": "1.0.0",
+  "evaluation_timestamp": "2026-10-30T22:24:54.981484",
+  "random_state": 42,
+  "dataset": {
+    "total_records": 3000,
+    "train_records": 2400,
+    "test_records": 600,
+    "target_column": "accident_severity",
+    "classes": [
+      "Slight",
+      "Serious",
+      "Fatal"
+    ],
+    "class_distribution": {
+      "Slight": 2154,
+      "Serious": 630,
+      "Fatal": 216
+    }
+  },
+  "features": {
+    "raw_categorical": [
+      "weather_conditions",
+      "road_surface_conditions",
+      "light_conditions",
+      "road_type",
+      "urban_or_rural_area",
+      "junction_detail",
+      "day_of_week",
+      "driver_age_band",
+      "vehicle_type"
+    ],
+    "raw_numerical": [
+      "speed_limit",
+      "number_of_vehicles",
+      "hour_of_day",
+      "is_rush_hour",
+      "is_night",
+      "is_weekend",
+      "is_adverse_weather",
+      "is_adverse_surface",
+      "is_poor_lighting",
+      "is_vulnerable_vehicle",
+      "is_high_speed"
+    ],
+    "engineered_features": [
+      "is_rush_hour",
+      "is_night",
+      "is_weekend",
+      "is_adverse_weather",
+      "is_adverse_surface",
+      "is_poor_lighting",
+      "is_vulnerable_vehicle",
+      "is_high_speed"
+    ],
+    "encoded_feature_count": 55,
+    "feature_names": [
+      "num__speed_limit",
+      "num__number_of_vehicles",
+      "num__hour_of_day",
+      "num__is_rush_hour",
+      "num__is_night",
+      "num__is_weekend",
+      "num__is_adverse_weather",
+      "num__is_adverse_surface",
+      "num__is_poor_lighting",
+      "num__is_vulnerable_vehicle",
+      "num__is_high_speed",
+      "cat__weather_conditions_Fine no high winds",
+      "cat__weather_conditions_Fog or mist",
+      "cat__weather_conditions_Other",
+      "cat__weather_conditions_Raining + high winds",
+      "cat__weather_conditions_Raining no high winds",
+      "cat__weather_conditions_Snowing",
+      "cat__road_surface_conditions_Dry",
+      "cat__road_surface_conditions_Flood over 3cm",
+      "cat__road_surface_conditions_Frost or ice",
+      "cat__road_surface_conditions_Snow",
+      "cat__road_surface_conditions_Wet or damp",
+      "cat__light_conditions_Darkness - lights lit",
+      "cat__light_conditions_Darkness - lights unlit",
+      "cat__light_conditions_Darkness - no lighting",
+      "cat__light_conditions_Daylight",
+      "cat__road_type_Dual carriageway",
+      "cat__road_type_One way street",
+      "cat__road_type_Roundabout",
+      "cat__road_type_Single carriageway",
+      "cat__road_type_Slip road",
+      "cat__urban_or_rural_area_Rural",
+      "cat__urban_or_rural_area_Urban",
+      "cat__junction_detail_Crossroads",
+      "cat__junction_detail_More than 4 arms",
+      "cat__junction_detail_Not at junction",
+      "cat__junction_detail_Roundabout",
+      "cat__junction_detail_T or staggered junction",
+      "cat__day_of_week_Friday",
+      "cat__day_of_week_Monday",
+      "cat__day_of_week_Saturday",
+      "cat__day_of_week_Sunday",
+      "cat__day_of_week_Thursday",
+      "cat__day_of_week_Tuesday",
+      "cat__day_of_week_Wednesday",
+      "cat__driver_age_band_18-25",
+      "cat__driver_age_band_26-35",
+      "cat__driver_age_band_36-55",
+      "cat__driver_age_band_56-65",
+      "cat__driver_age_band_65+",
+      "cat__vehicle_type_Bus",
+      "cat__vehicle_type_Car",
+      "cat__vehicle_type_Goods vehicle",
+      "cat__vehicle_type_Motorcycle",
+      "cat__vehicle_type_Other"
+    ]
+  },
+  "best_model": {
+    "name": "Random Forest",
+    "criterion": "Highest Macro F1-score",
+    "accuracy": 0.5733,
+    "macro_f1": 0.3622,
+    "weighted_f1": 0.5959,
+    "roc_auc_ovr": 0.5817,
+    "saved_path": "models/best_model.joblib"
+  },
+  "all_models_evaluation": {
+    "Dummy Majority Baseline": {
+      "accuracy": 0.7183,
+      "macro_f1": 0.2787,
+      "weighted_f1": 0.6006,
+      "macro_precision": 0.2394,
+      "macro_recall": 0.3333,
+      "roc_auc_ovr": 0.5,
+      "per_class": {
+        "Slight": {
+          "precision": 0.7183,
+          "recall": 1.0,
+          "f1_score": 0.8361,
+          "support": 431
+        },
+        "Serious": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "support": 126
+        },
+        "Fatal": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "support": 43
+        }
+      },
+      "confusion_matrix": [
+        [
+          431,
+          0,
+          0
+        ],
+        [
+          126,
+          0,
+          0
+        ],
+        [
+          43,
+          0,
+          0
+        ]
+      ],
+      "class_names": [
+        "Slight",
+        "Serious",
+        "Fatal"
+      ],
+      "model_name": "Dummy Majority Baseline"
+    },
+    "Random Forest": {
+      "accuracy": 0.5733,
+      "macro_f1": 0.3622,
+      "weighted_f1": 0.5959,
+      "macro_precision": 0.3657,
+      "macro_recall": 0.3656,
+      "roc_auc_ovr": 0.5817,
+      "per_class": {
+        "Slight": {
+          "precision": 0.7931,
+          "recall": 0.6937,
+          "f1_score": 0.7401,
+          "support": 431
+        },
+        "Serious": {
+          "precision": 0.2485,
+          "recall": 0.3333,
+          "f1_score": 0.2847,
+          "support": 126
+        },
+        "Fatal": {
+          "precision": 0.0556,
+          "recall": 0.0698,
+          "f1_score": 0.0619,
+          "support": 43
+        }
+      },
+      "confusion_matrix": [
+        [
+          299,
+          103,
+          29
+        ],
+        [
+          62,
+          42,
+          22
+        ],
+        [
+          16,
+          24,
+          3
+        ]
+      ],
+      "class_names": [
+        "Slight",
+        "Serious",
+        "Fatal"
+      ],
+      "model_name": "Random Forest"
+    },
+    "XGBoost": {
+      "accuracy": 0.555,
+      "macro_f1": 0.361,
+      "weighted_f1": 0.5742,
+      "macro_precision": 0.362,
+      "macro_recall": 0.3654,
+      "roc_auc_ovr": 0.5554,
+      "per_class": {
+        "Slight": {
+          "precision": 0.7506,
+          "recall": 0.6705,
+          "f1_score": 0.7083,
+          "support": 431
+        },
+        "Serious": {
+          "precision": 0.2532,
+          "recall": 0.3095,
+          "f1_score": 0.2786,
+          "support": 126
+        },
+        "Fatal": {
+          "precision": 0.082,
+          "recall": 0.1163,
+          "f1_score": 0.0962,
+          "support": 43
+        }
+      },
+      "confusion_matrix": [
+        [
+          289,
+          102,
+          40
+        ],
+        [
+          71,
+          39,
+          16
+        ],
+        [
+          25,
+          13,
+          5
+        ]
+      ],
+      "class_names": [
+        "Slight",
+        "Serious",
+        "Fatal"
+      ],
+      "model_name": "XGBoost"
+    }
+  }
+}

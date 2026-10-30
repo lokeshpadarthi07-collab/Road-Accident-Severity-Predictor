@@ -1,0 +1,155 @@
+{
+  "Dummy Majority Baseline": {
+    "accuracy": 0.7183,
+    "macro_f1": 0.2787,
+    "weighted_f1": 0.6006,
+    "macro_precision": 0.2394,
+    "macro_recall": 0.3333,
+    "roc_auc_ovr": 0.5,
+    "per_class": {
+      "Slight": {
+        "precision": 0.7183,
+        "recall": 1.0,
+        "f1_score": 0.8361,
+        "support": 431
+      },
+      "Serious": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "support": 126
+      },
+      "Fatal": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "support": 43
+      }
+    },
+    "confusion_matrix": [
+      [
+        431,
+        0,
+        0
+      ],
+      [
+        126,
+        0,
+        0
+      ],
+      [
+        43,
+        0,
+        0
+      ]
+    ],
+    "class_names": [
+      "Slight",
+      "Serious",
+      "Fatal"
+    ],
+    "model_name": "Dummy Majority Baseline"
+  },
+  "Random Forest": {
+    "accuracy": 0.5733,
+    "macro_f1": 0.3622,
+    "weighted_f1": 0.5959,
+    "macro_precision": 0.3657,
+    "macro_recall": 0.3656,
+    "roc_auc_ovr": 0.5817,
+    "per_class": {
+      "Slight": {
+        "precision": 0.7931,
+        "recall": 0.6937,
+        "f1_score": 0.7401,
+        "support": 431
+      },
+      "Serious": {
+        "precision": 0.2485,
+        "recall": 0.3333,
+        "f1_score": 0.2847,
+        "support": 126
+      },
+      "Fatal": {
+        "precision": 0.0556,
+        "recall": 0.0698,
+        "f1_score": 0.0619,
+        "support": 43
+      }
+    },
+    "confusion_matrix": [
+      [
+        299,
+        103,
+        29
+      ],
+      [
+        62,
+        42,
+        22
+      ],
+      [
+        16,
+        24,
+        3
+      ]
+    ],
+    "class_names": [
+      "Slight",
+      "Serious",
+      "Fatal"
+    ],
+    "model_name": "Random Forest"
+  },
+  "XGBoost": {
+    "accuracy": 0.555,
+    "macro_f1": 0.361,
+    "weighted_f1": 0.5742,
+    "macro_precision": 0.362,
+    "macro_recall": 0.3654,
+    "roc_auc_ovr": 0.5554,
+    "per_class": {
+      "Slight": {
+        "precision": 0.7506,
+        "recall": 0.6705,
+        "f1_score": 0.7083,
+        "support": 431
+      },
+      "Serious": {
+        "precision": 0.2532,
+        "recall": 0.3095,
+        "f1_score": 0.2786,
+        "support": 126
+      },
+      "Fatal": {
+        "precision": 0.082,
+        "recall": 0.1163,
+        "f1_score": 0.0962,
+        "support": 43
+      }
+    },
+    "confusion_matrix": [
+      [
+        289,
+        102,
+        40
+      ],
+      [
+        71,
+        39,
+        16
+      ],
+      [
+        25,
+        13,
+        5
+      ]
+    ],
+    "class_names": [
+      "Slight",
+      "Serious",
+      "Fatal"
+    ],
+    "model_name": "XGBoost"
+  }
+}
