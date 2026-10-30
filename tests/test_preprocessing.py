@@ -81,3 +81,4 @@ def test_column_transformer_unknown_category():
     assert X_train_trans.shape[0] == 3
     assert X_test_trans.shape[0] == 2
     assert not np.isnan(X_test_trans).any()
+

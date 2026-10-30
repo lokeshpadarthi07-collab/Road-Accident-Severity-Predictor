@@ -273,3 +273,4 @@ def train_pipeline(config_path: str = "config/config.yaml") -> Dict[str, Any]:
 
 if __name__ == "__main__":
     train_pipeline()
+

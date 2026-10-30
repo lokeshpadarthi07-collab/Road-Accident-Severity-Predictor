@@ -42,7 +42,7 @@ def build_preprocessor(
             ("num", numerical_transformer, numerical_features),
             ("cat", categorical_transformer, categorical_features)
         ],
-        remainder="passthrough"
+        remainder="drop"
     )
 
     return preprocessor
@@ -118,3 +118,4 @@ def load_preprocessor_artifacts(
     preprocessor = joblib.load(preprocessor_path)
     target_encoder = joblib.load(encoder_path)
     return preprocessor, target_encoder
+

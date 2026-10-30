@@ -67,3 +67,4 @@ def test_prediction_output_structure():
     # Probabilities should sum to approximately 1.0
     probs = result["probabilities"]
     assert abs(sum(probs.values()) - 1.0) < 0.05
+

@@ -1,7 +1,7 @@
 {
   "project_name": "Road Accident Severity Predictor",
   "project_version": "1.0.0",
-  "evaluation_timestamp": "2026-10-30T22:24:54.981484",
+  "evaluation_timestamp": "2026-10-30T22:53:12.653806",
   "random_state": 42,
   "dataset": {
     "total_records": 3000,

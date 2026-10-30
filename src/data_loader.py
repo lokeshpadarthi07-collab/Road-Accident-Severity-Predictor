@@ -208,6 +208,12 @@ def generate_demonstration_dataset(
     for idx in missing_age_idx:
         driver_age_list[idx] = np.nan
 
+    # Geospatial coordinates for mapping (clustered around urban centers and rural corridors)
+    base_lats = np.where(urban_rural == "Urban", 51.5074, 51.6500)
+    base_lons = np.where(urban_rural == "Urban", -0.1278, -0.2500)
+    lats = np.round(base_lats + rng.normal(0, 0.06, size=n_samples), 5)
+    lons = np.round(base_lons + rng.normal(0, 0.08, size=n_samples), 5)
+
     # Build DataFrame
     df = pd.DataFrame({
         "accident_id": [f"ACC-2026-{i+1:05d}" for i in range(n_samples)],
@@ -223,6 +229,8 @@ def generate_demonstration_dataset(
         "number_of_vehicles": num_vehicles,
         "driver_age_band": driver_age_list,
         "vehicle_type": vehicle,
+        "latitude": lats,
+        "longitude": lons,
         "accident_severity": severities
     })
 
@@ -341,3 +349,4 @@ if __name__ == "__main__":
     print(f"Total Rows: {val['total_rows']}")
     print(f"Class Distribution: {val['class_distribution']['counts']}")
     print(f"Missing Values: {val['missing_values']}")
+

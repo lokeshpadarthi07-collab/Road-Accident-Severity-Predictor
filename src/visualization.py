@@ -251,3 +251,4 @@ def plot_feature_importance(
     plt.close()
     logger.info(f"Saved feature importance plot to {save_path}")
     return save_path
+

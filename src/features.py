@@ -137,3 +137,4 @@ def engineer_features(df: pd.DataFrame, time_column: str = "accident_time") -> p
     """Helper functional interface to engineer features."""
     transformer = AccidentFeatureEngineer(time_column=time_column)
     return transformer.transform(df)
+

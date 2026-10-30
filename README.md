@@ -4,64 +4,74 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.4%2B-orange.svg?logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
 [![XGBoost](https://img.shields.io/badge/XGBoost-2.0%2B-red.svg)](https://xgboost.readthedocs.io/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
-[![Tests](https://img.shields.io/badge/Tests-10%20Passed-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF.svg?logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Tests](https://img.shields.io/badge/Tests-14%20Passed-brightgreen.svg?logo=pytest&logoColor=white)](https://pytest.org/)
 
-> **An end-to-end, reproducible Machine Learning pipeline and interactive analytical web application to predict road accident severity based strictly on pre-collision environmental, infrastructural, and vehicular factors.**
+> **A production-grade, reproducible Machine Learning platform, interactive analytical web application, and REST microservice predicting road accident severity based strictly on pre-collision environmental, infrastructural, and vehicular factors.**
 
 ---
 
 ## 📌 Table of Contents
 
-- [Project Overview](#-project-overview)
+- [Executive Summary](#-executive-summary)
+- [Key Recruiter Highlights & Differentiators](#-key-recruiter-highlights--differentiators)
 - [Problem Statement & Leakage Prevention](#-problem-statement--leakage-prevention)
 - [System Architecture](#-system-architecture)
-- [Key Features](#-key-features)
-- [Technology Stack](#-technology-stack)
-- [Dataset Documentation & Benchmark](#-dataset-documentation--benchmark)
-- [Installation & Environment Setup](#-installation--environment-setup)
-- [Machine Learning Workflow](#-machine-learning-workflow)
-- [Actual Model Benchmark Results](#-actual-model-benchmark-results)
-- [The Class Imbalance Paradox](#-the-class-imbalance-paradox-accuracy-vs-macro-f1)
-- [Running the Streamlit Web Application](#-running-the-streamlit-web-application)
-- [Application Screenshots & UI Walkthrough](#-application-screenshots--ui-walkthrough)
-- [Automated Testing](#-automated-testing)
+- [Feature Engineering & Preprocessing](#-feature-engineering--preprocessing)
+- [Model Benchmark & Class Imbalance Breakdown](#-model-benchmark--class-imbalance-breakdown)
+- [Streamlit Web Application & Interactive Demos](#-streamlit-web-application--interactive-demos)
+- [FastAPI Production Microservice & Swagger UI](#-fastapi-production-microservice--swagger-ui)
+- [Docker & Containerized Deployment](#-docker--containerized-deployment)
+- [CI/CD Automated Testing Workflow](#-cicd-automated-testing-workflow)
+- [Automated Test Suite (14 Tests)](#-automated-test-suite-14-tests)
 - [Project Directory Structure](#-project-directory-structure)
-- [Model Limitations & Responsible AI](#-model-limitations--responsible-ai)
-- [Troubleshooting & FAQ](#-troubleshooting--faq)
-- [Future Roadmap](#-future-roadmap)
+- [Installation & Quickstart](#-installation--quickstart)
+- [Responsible AI & Ethical Statement](#-responsible-ai--ethical-statement)
 - [Author & Contact](#-author--contact)
 
 ---
 
-## 🌟 Project Overview
+## 🌟 Executive Summary
 
-Road traffic collisions cause millions of injuries annually worldwide. Traditional risk analysis often evaluates retrospective data, but predicting **accident severity prior to emergency intervention** presents significant machine learning challenges—most notably **extreme class imbalance** and **risk of target leakage**.
+Road traffic collisions cause millions of severe injuries annually worldwide. While traditional road safety reports analyze historical outcomes retrospectively, predicting **injury severity prior to emergency arrival** presents two classic machine learning challenges:
+1. **Severe Class Imbalance**: Fatalities represent only ~4% of collisions, while slight injuries constitute ~78%. Naive models optimizing for raw accuracy produce degenerate classifiers that miss all fatal incidents.
+2. **High Risk of Target Leakage**: Amateur models mistakenly incorporate variables that only occur *after* the crash (e.g. casualty counts or hospital admissions), creating artificial ~99% accuracy that is useless in pre-accident operations.
 
-**Road Accident Severity Predictor** demonstrates a production-standard machine learning lifecycle:
-1. **Target Leakage Firewall**: Strictly utilizes features known prior to or at the immediate onset of an accident (weather, road surface, lighting, road type, speed limit, time of day, vehicle category). Post-accident observations (e.g. casualty counts, hospital admissions) are strictly filtered out.
-2. **Imbalance-Aware Modeling**: Real-world accident datasets have severe class distributions (~78% Slight, ~18% Serious, ~4% Fatal). The pipeline implements class-balanced loss weighting and evaluates models on **Macro F1-Score** and **Minority Recall**, rejecting deceptive raw accuracy metrics.
-3. **Multi-Model Comparison**: Evaluates a **Dummy Majority Baseline**, **Random Forest Classifier**, and **XGBoost Classifier**.
-4. **Interactive Streamlit Web Dashboard**: Provides a multi-page interface featuring real-time severity estimation, probability breakdown, risk factor attribution, exploratory charts, and model diagnostic heatmaps.
-5. **Production Quality**: 100% automated test coverage with `pytest`, modular code structure (`src/`), clean YAML configuration, and serialized preprocessors with `joblib`.
+**Road Accident Severity Predictor** solves both problems through a production-grade machine learning pipeline, class-weighted optimization, a multi-page **Streamlit** dashboard, a high-throughput **FastAPI** REST microservice, and automated **GitHub Actions CI/CD**.
+
+---
+
+## 💎 Key Recruiter Highlights & Differentiators
+
+What elevates this project beyond a standard course assignment:
+
+- 🛡️ **Zero Target Leakage Firewall**: An automated schema auditor blocks post-incident variables (e.g., `number_of_casualties`, `casualty_severity`, `hospital_status`), enforcing strict pre-collision estimation.
+- ⚖️ **Imbalance-Aware Model Optimization**: Overcomes the "Accuracy Paradox" via class-balanced loss weighting in **Random Forest** and **XGBoost**, maximizing **Macro F1-Score (0.3622)** and detecting **33.3% of Serious** and **7.0% – 11.6% of Fatal** injuries.
+- 💡 **Interactive "What-If" Counterfactual Policy Simulator**: Allows traffic engineers and recruiters to simulate proposed interventions (e.g., *What happens to Fatal risk if speed drops from 60 to 40 mph and street lighting is installed?*) with dynamic $\Delta$ probability delta cards.
+- 📁 **High-Throughput Batch Incident Scoring & CSV Export**: Ingests multi-row CSV files, scores incidents through the pipeline, calculates an aggregate **Regional Risk Index (RRI: 0–100)**, and exports the scored dataset.
+- 🗺️ **3D Geospatial Density Hotspot Map (PyDeck)**: Interactive 3D hexagon cluster and scatter maps revealing spatial severity patterns across urban and rural transport corridors.
+- ⚡ **Production FastAPI REST Microservice**: Complete OpenAPI / Swagger docs at `/docs`, with Pydantic v2 input validation schemas, `/predict`, `/batch_predict`, and `/health` endpoints.
+- 🐳 **Docker & Docker Compose Ready**: Multi-stage Docker containerization supporting concurrent Streamlit (`:8501`) and FastAPI (`:8000`) services.
+- 🧪 **Comprehensive Automated Testing**: 14 unit and integration tests passing in `pytest` under 3.5 seconds.
 
 ---
 
 ## 🛡️ Problem Statement & Leakage Prevention
 
-### The Problem
-Predict accident injury severity classified into three tiers:
-- **`Slight`**: Minor abrasions, scrapes, or bruises; outpatient treatment.
-- **`Serious`**: Severe injuries, fractures, severe lacerations, hospital admission.
-- **`Fatal`**: Fatalities occurring as a result of the collision.
+### The Classification Objective
+Predict accident injury severity across three ordinal tiers:
+- **`Slight`**: Minor abrasions, scrapes, bruises; outpatient check.
+- **`Serious`**: Severe trauma, bone fractures, deep lacerations; hospital admission.
+- **`Fatal`**: Fatalities resulting from the collision.
 
 ### Preventing Target Leakage
-A critical failure in amateur road accident models is using variables that **materialize only after the collision**. 
-
-| Variable Category | Examples | Status | Reason |
+| Feature Category | Examples | Pipeline Action | Why It Matters |
 | :--- | :--- | :---: | :--- |
-| **Pre-Accident Factors** | Speed limit, weather, lighting, road type, time, vehicle type, driver age band | ✅ **Included** | Available before/at the moment of the crash; valid for pre-collision risk estimation. |
-| **Post-Accident Telemetry** | `number_of_casualties`, `hospital_status`, `airbag_deployed`, `towed_away`, `insurance_cost` | ❌ **Excluded** | **Target Leakage**. Using these produces artificial ~99% accuracy but makes the model useless in pre-accident safety auditing. |
+| **Pre-Accident Factors** | Speed limit, weather, road surface, lighting, road geometry, driver age, vehicle type, time | ✅ **Retained** | Valid observations known before impact; enables proactive safety auditing. |
+| **Post-Accident Telemetry** | `number_of_casualties`, `hospital_status`, `airbag_deployed`, `towing_cost` | ❌ **Rejected** | **Target Leakage**. Inflates test accuracy to ~99% while destroying model validity for pre-collision decision support. |
 
 ---
 
@@ -69,11 +79,11 @@ A critical failure in amateur road accident models is using variables that **mat
 
 ```mermaid
 flowchart TD
-    A["Raw Accident Dataset<br/>(data/raw/road_accidents_demo.csv)"] --> B["Data Loader & Schema Validator<br/>(src/data_loader.py)"]
-    B --> C["Target Leakage Firewall<br/>(Blocks post-accident telemetry)"]
-    C --> D["Feature Engineering<br/>(src/features.py: Hour, Rush Hour, Flags)"]
+    A["Raw Accident Dataset<br/>(data/raw/road_accidents_demo.csv)"] --> B["Data Ingestion & Schema Validator<br/>(src/data_loader.py)"]
+    B --> C["Target Leakage Firewall<br/>(Rejects post-accident telemetry)"]
+    C --> D["Feature Engineering<br/>(src/features.py: 24h Hour, Commuter Rush, Flags)"]
     D --> E["Stratified Train/Test Split<br/>(80% Train / 20% Test, Seed 42)"]
-    E --> F["ColumnTransformer Preprocessor<br/>(Imputation, Scaling, One-Hot Encoding)"]
+    E --> F["ColumnTransformer Pipeline<br/>(Median Imputation, StandardScaler, OneHotEncoder)"]
     
     F --> G1["Dummy Majority Baseline"]
     F --> G2["Random Forest<br/>(class_weight='balanced')"]
@@ -83,127 +93,18 @@ flowchart TD
     G2 --> H
     G3 --> H
     
-    H --> I["Model Selection Engine<br/>(Champion: Highest Macro F1)"]
+    H --> I["Champion Selection<br/>(Random Forest: Macro F1 0.3622)"]
     I --> J["Artifact Serialization<br/>(models/best_model.joblib, metadata.json)"]
     
-    J --> K["Streamlit Interactive Web App<br/>(app.py)"]
-    K --> L["Severity Estimate, Class Probabilities & Risk Factors"]
+    J --> K["Streamlit Web Application<br/>(app.py: Presets, What-If, Batch, PyDeck Map)"]
+    J --> L["FastAPI REST Microservice<br/>(api.py: /predict, /batch_predict, Swagger /docs)"]
 ```
 
 ---
 
-## 🚀 Key Features
+## 📈 Model Benchmark & Class Imbalance Breakdown
 
-- **End-to-End Pipeline**: From raw data loading to inference, modularized across clean, decoupled files.
-- **Calibrated Benchmark Dataset**: Includes a self-contained, reproducible 3,000-record benchmark dataset modeled on UK DfT STATS19 distributions with realistic class imbalance and risk correlations.
-- **Rigorous Feature Engineering**: Extracts 24h temporal cycles, peak commuter rush hours, weekend flags, vulnerable road-user classifications (motorcycles), and environmental risk flags.
-- **Scikit-Learn ColumnTransformer**: Reproducible data transformations with `SimpleImputer`, `StandardScaler`, and `OneHotEncoder(handle_unknown='ignore')`.
-- **Model Interpretability**: Tree-based feature importance rankings and instance-level risk factor attribution.
-- **Modern Streamlit Application**:
-  - **Overview Dashboard**: High-level KPIs, class distribution charts, and hourly collision timelines.
-  - **Severity Prediction**: Interactive scenario presets, parameter inputs, real-time probability progress bars, and risk tags.
-  - **Model Performance**: Full comparative benchmark matrix, confusion matrix heatmaps, and classification metrics.
-  - **Data Insights**: Interactive risk breakdowns across weather, road surface, and speed tiers.
-  - **About & Methodology**: Architecture diagram, leakage prevention guide, and ethical statements.
-
----
-
-## 💻 Technology Stack
-
-| Domain | Technologies Used |
-| :--- | :--- |
-| **Language** | Python 3.10+ (tested through Python 3.14) |
-| **Data Processing** | Pandas, NumPy, Scipy |
-| **Machine Learning** | Scikit-Learn (Random Forest, ColumnTransformer, Metrics), XGBoost |
-| **Web Application** | Streamlit |
-| **Data Visualization** | Matplotlib, Seaborn |
-| **Model Persistence** | Joblib, PyYAML |
-| **Quality & Testing** | Pytest (10 unit & integration tests) |
-| **Version Control** | Git, GitHub |
-
----
-
-## 📊 Dataset Documentation & Benchmark
-
-The project includes a calibrated benchmark demonstration dataset (`data/raw/road_accidents_demo.csv`):
-- **Records**: 3,000 incidents
-- **Pre-accident Features**:
-  - `accident_time` (HH:MM string, converted to `hour_of_day`)
-  - `day_of_week` (Monday through Sunday)
-  - `speed_limit` (20 to 70 mph)
-  - `weather_conditions` (Fine, Raining, Snowing, Fog, etc.)
-  - `road_surface_conditions` (Dry, Wet, Frost/Ice, Snow, Flood)
-  - `light_conditions` (Daylight, Darkness lit, Darkness unlit, Darkness no lighting)
-  - `road_type` (Single carriageway, Dual carriageway, Roundabout, etc.)
-  - `urban_or_rural_area` (Urban, Rural)
-  - `junction_detail` (Crossroads, T-junction, Roundabout, etc.)
-  - `vehicle_type` (Car, Motorcycle, Bus, Goods vehicle, Other)
-  - `driver_age_band` (18-25, 26-35, 36-55, 56-65, 65+)
-  - `number_of_vehicles` (1 to 5+)
-- **Target**: `accident_severity` (`Slight`: 71.8%, `Serious`: 21.0%, `Fatal`: 7.2%)
-
-*Note: For external datasets (e.g. UK STATS19 or US Accidents), drop the CSV into `data/raw/` and update `config/config.yaml`.*
-
----
-
-## ⚙️ Installation & Environment Setup
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/your-username/road-accident-severity-predictor.git
-cd road-accident-severity-predictor
-```
-
-### 2. Create and Activate a Virtual Environment
-```bash
-# On Linux / macOS
-python3 -m venv venv
-source venv/bin/activate
-
-# On Windows (Command Prompt / PowerShell)
-python -m venv venv
-.\venv\Scripts\activate
-```
-
-### 3. Install Dependencies
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
----
-
-## 🔬 Machine Learning Workflow
-
-### 1. Exploratory Data Analysis
-Launch Jupyter to explore the annotated EDA notebook:
-```bash
-jupyter notebook notebooks/exploratory_data_analysis.ipynb
-```
-
-### 2. Model Training & Benchmarking
-Run the training pipeline. This performs data validation, feature engineering, stratified train/test split, ColumnTransformer fitting, hyperparameter-informed training for Random Forest and XGBoost, model evaluation, and artifact saving:
-```bash
-python -m src.train
-```
-
-### 3. Standalone Model Evaluation
-To evaluate existing trained model artifacts and generate metrics reports:
-```bash
-python -m src.evaluate
-```
-
-### 4. Command-Line Inference Test
-Test single-incident prediction through the inference module:
-```bash
-python -m src.predict
-```
-
----
-
-## 📈 Actual Model Benchmark Results
-
-The models were evaluated on an independent, held-out test set of **600 stratified incidents**.
+The models were evaluated on an independent, held-out test set of **600 stratified incidents**:
 
 | Model | Accuracy | Macro F1 | Weighted F1 | Macro Recall | ROC-AUC (OvR) | Fatal Recall | Serious Recall |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -211,63 +112,121 @@ The models were evaluated on an independent, held-out test set of **600 stratifi
 | **Random Forest (Champion)** | **57.33%** | **0.3622** | **0.5959** | **0.3656** | **0.5817** | **7.0%** | **33.3%** |
 | **XGBoost** | 55.50% | 0.3610 | 0.5742 | 0.3654 | 0.5554 | 11.6% | 30.9% |
 
-*Champion Model Selection:* **Random Forest Classifier** was selected as the champion model because it achieved the highest **Macro F1-score (0.3622)** and highest **Multi-Class ROC-AUC (0.5817)**.
+### Why Accuracy Alone Is Deceptive (The Accuracy Paradox)
+- The **Dummy Majority Baseline** scores an impressive **71.83% accuracy** by predicting `Slight` on 100% of cases. However, it predicts **0% of Serious and Fatal collisions** (0.0% recall).
+- By applying **balanced class weighting**, our models penalize errors on minority classes heavily, sacrificing non-critical majority accuracy to identify **33.3% of Serious** and **7.0% – 11.6% of Fatal** injuries.
+- Model selection is guided by **Macro F1-Score** (unweighted harmonic mean across all three classes), treating all severity tiers with equal mathematical priority.
 
 ---
 
-## 🧠 The Class Imbalance Paradox: Accuracy vs. Macro F1
+## 🖥️ Streamlit Web Application & Interactive Demos
 
-In real-world accident data, slight incidents constitute over 70% of all events. This creates a critical trap in model evaluation:
-
-> **The Majority Baseline Illusion**:
-> A naive model that always predicts `Slight` achieves **71.83% accuracy**!
-> However, such a model is catastrophic in practice: it predicts **0% of Serious accidents** and **0% of Fatal accidents** (0.0% recall).
-
-By applying **balanced class weighting** (`class_weight='balanced'` in Random Forest and balanced sample weights in XGBoost):
-- The model penalizes mistakes on minority classes proportionally to their scarcity.
-- The model intentionally trades off majority-class accuracy in exchange for high **Serious Recall (33.3%)** and **Fatal Recall (7.0% - 11.6%)**.
-- **Macro F1-Score** weights all severity tiers equally, ensuring life-critical outcomes are prioritized during model selection.
-
----
-
-## 🖥️ Running the Streamlit Web Application
-
-To launch the interactive dashboard:
-
+Launch the interactive dashboard:
 ```bash
 streamlit run app.py
 ```
 
-The application will launch in your browser at `http://localhost:8501`.
+### Application Pages:
+1. **Overview Dashboard**: High-level incident counters, class imbalance breakdown, 24-hr commuter accident distribution, and champion model KPIs.
+2. **Accident Severity Prediction**: Interactive scenario presets (e.g. *High-Speed Rural Night Incident*), custom input controls, real-time probability progress bars, and risk factor tag attribution.
+3. **What-If Counterfactual Simulator**: Side-by-side comparison between baseline conditions and safety interventions (e.g. speed reduction, street lighting installation) with delta metric cards ($\Delta P(\text{Fatal})$, $\Delta P(\text{Serious})$).
+4. **Batch Incident Scoring & Export**: Upload any CSV or load a sample batch of 15 records, calculate the aggregate Regional Risk Index (RRI), and export scored results.
+5. **Geospatial Hotspot Map**: 3D PyDeck visualization featuring hexagonal incident clustering and class-colored scatter points.
+6. **Model Performance**: Full comparative benchmark table against the Dummy Baseline, confusion matrix heatmaps, and top feature importances.
+7. **Data Insights**: Risk distributions across weather, road surface, and speed limits.
+8. **About the Project**: System architecture, data leakage firewall explanation, and ethical statements.
 
 ---
 
-## 📸 Application Screenshots & UI Walkthrough
+## ⚡ FastAPI Production Microservice & Swagger UI
 
-*(Recommended screenshots for your resume portfolio)*
-
-1. **Executive Dashboard**: Displays total incidents analyzed, severity class proportions, 24-hour commuter collision patterns, and champion model KPIs.
-2. **Accident Severity Predictor**: Interactive input form with scenario presets (e.g. "Scenario A: High-Speed Rural Night Incident"), real-time predicted class badge, class probability gauge bars, and risk factor breakdown.
-3. **Model Performance**: Full comparative benchmark table against the Dummy Baseline, confusion matrix heatmaps, and top influential features bar chart.
-4. **Data Insights**: Multi-tab risk explorer for weather, road surface, and speed limit correlations.
-5. **About & Methodology**: System architecture flowchart and ethical decision-support statement.
-
----
-
-## 🧪 Automated Testing
-
-Automated testing is implemented using `pytest` to ensure code stability, schema validation, and leakage prevention:
-
+Start the REST API microservice:
 ```bash
-pytest
+python -m uvicorn api:app --reload --port 8000
+```
+Open **`http://localhost:8000/docs`** to explore the interactive Swagger UI.
+
+### Available Endpoints:
+- `GET /`: Service name, version, and status.
+- `GET /health`: Model loading state and champion model metadata.
+- `GET /model_info`: Model architecture, training timestamp, and benchmark metrics.
+- `POST /predict`: Real-time severity estimation with Pydantic v2 input validation and risk factor attribution.
+- `POST /batch_predict`: High-throughput batch inference for multi-row payloads.
+
+#### Example Request (`POST /predict`):
+```json
+{
+  "accident_time": "22:45",
+  "day_of_week": "Friday",
+  "speed_limit": 60,
+  "weather_conditions": "Raining + high winds",
+  "road_surface_conditions": "Wet or damp",
+  "light_conditions": "Darkness - no lighting",
+  "road_type": "Single carriageway",
+  "urban_or_rural_area": "Rural",
+  "junction_detail": "Not at junction",
+  "number_of_vehicles": 2,
+  "driver_age_band": "18-25",
+  "vehicle_type": "Motorcycle"
+}
 ```
 
-### Test Suite Summary:
-- `tests/test_data_validation.py`: Verifies schema validation, data types, and **automatic detection of post-accident leakage columns** (`number_of_casualties`, `casualty_severity`).
-- `tests/test_preprocessing.py`: Tests 24-hour time parser, feature engineer derived flags, target encoder, and `ColumnTransformer` handling of unseen categorical categories.
-- `tests/test_prediction.py`: Tests inference pipeline, probability constraints ($\sum P = 1.0$), input schema bounds checking, and graceful error handling.
+#### Example Response:
+```json
+{
+  "predicted_severity": "Fatal",
+  "risk_tier": "Critical",
+  "probabilities": {
+    "Slight": 0.243,
+    "Serious": 0.3726,
+    "Fatal": 0.3844
+  },
+  "classes": ["Slight", "Serious", "Fatal"],
+  "risk_factors": [
+    {
+      "factor": "High Speed Limit (60 mph)",
+      "level": "High",
+      "impact": "Significantly amplifies collision impact energy and fatal injury probability."
+    },
+    {
+      "factor": "Vulnerable Road User (Motorcycle)",
+      "level": "High",
+      "impact": "Absence of passenger cabin protection sharply elevates severe injury risk."
+    }
+  ],
+  "disclaimer": "DISCLAIMER: Predictions produced by this application are experimental, statistical decision-support estimates..."
+}
+```
 
-**Result: 10 / 10 Tests Passed.**
+---
+
+## 🐳 Docker & Containerized Deployment
+
+Run the entire platform using Docker Compose:
+
+```bash
+# Build and launch both Streamlit and FastAPI microservices
+docker compose up --build
+```
+- **Streamlit Web UI**: `http://localhost:8501`
+- **FastAPI REST API**: `http://localhost:8000/docs`
+
+---
+
+## 🧪 Automated Test Suite (14 Tests)
+
+Run the automated test suite with pytest:
+```bash
+pytest -v
+```
+
+### Test Coverage Summary:
+- `tests/test_api.py`: Tests `/`, `/health`, `/predict`, and Pydantic validation error handling.
+- `tests/test_data_validation.py`: Tests schema integrity, non-empty datasets, and **detection of post-accident target leakage columns** (`number_of_casualties`, `casualty_severity`).
+- `tests/test_preprocessing.py`: Tests 24-hr time parser, feature engineer derived flags, target encoder, and handling of unseen categorical categories.
+- `tests/test_prediction.py`: Tests inference pipeline, probability constraints ($\sum P = 1.0$), input schema bounds, and single/batch prediction.
+
+**Result: 14 / 14 Tests Passing.**
 
 ---
 
@@ -275,91 +234,88 @@ pytest
 
 ```text
 road-accident-severity-predictor/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # GitHub Actions CI workflow (multi-version Python)
 ├── .gitignore                      # Git exclusion rules
+├── Dockerfile                      # Multi-stage production container setup
+├── docker-compose.yml              # Multi-container orchestration (Streamlit + FastAPI)
 ├── LICENSE                         # MIT License
-├── README.md                       # Comprehensive project documentation
+├── README.md                       # Recruiter-grade project documentation
+├── api.py                          # Production FastAPI REST microservice
 ├── app.py                          # Streamlit multi-page web application
-├── pytest.ini                      # Pytest configuration settings
-├── requirements.txt                # Pinned production dependencies
+├── pytest.ini                      # Pytest automated test configuration
+├── requirements.txt                # Production dependencies
 ├── config/
-│   └── config.yaml                 # Centralized configuration (paths, features, models)
+│   └── config.yaml                 # Centralized configuration (paths, features, hyperparams)
 ├── data/
-│   ├── README.md                   # Dataset documentation and leakage guidelines
+│   ├── README.md                   # Dataset dictionary, licensing & leakage guidelines
 │   ├── raw/
-│   │   └── road_accidents_demo.csv # Calibrated benchmark dataset (3,000 records)
+│   │   └── road_accidents_demo.csv # Calibrated benchmark dataset with coordinates (3,000 rows)
 │   └── processed/
-│       ├── train_processed.parquet # Stratified training set (2,400 records)
-│       └── test_processed.parquet  # Stratified test set (600 records)
+│       ├── train_processed.parquet # Stratified training set (2,400 rows)
+│       └── test_processed.parquet  # Stratified test set (600 rows)
 ├── models/
-│   ├── README.md                   # Model artifact documentation
-│   ├── best_model.joblib           # Champion serialized classifier
+│   ├── README.md                   # Model artifact manifest & retraining instructions
+│   ├── best_model.joblib           # Champion serialized classifier (Random Forest)
 │   ├── random_forest.joblib        # Fitted Random Forest model
 │   ├── xgboost.joblib              # Fitted XGBoost model
-│   ├── preprocessor.joblib         # Fitted scikit-learn ColumnTransformer
-│   ├── label_encoder.joblib        # Fitted TargetEncoder
+│   ├── preprocessor.joblib         # Fitted Scikit-Learn ColumnTransformer
+│   ├── label_encoder.joblib        # Fitted target LabelEncoder
 │   ├── model_metadata.json         # Complete JSON model metadata & metrics
 │   └── evaluation_reports/
-│       └── evaluation_results.json # Machine-readable metrics output
+│       └── evaluation_results.json # Machine-readable test metric breakdown
 ├── notebooks/
-│   └── exploratory_data_analysis.ipynb # Comprehensive EDA Jupyter Notebook
+│   └── exploratory_data_analysis.ipynb # Interactive Jupyter EDA notebook
 ├── reports/
 │   └── figures/                    # Publication-grade figures (300 DPI)
-│       ├── 01_class_distribution.png
-│       ├── 02_accidents_by_hour.png
-│       ├── 03_accidents_by_day.png
-│       ├── 04_weather_severity.png
-│       ├── 05_road_surface_severity.png
-│       ├── 05_speed_vs_severity.png
-│       ├── 06_light_severity.png
-│       ├── confusion_matrix_random_forest.png
-│       ├── confusion_matrix_xgboost.png
-│       ├── feature_importance_random_forest.png
-│       └── feature_importance_xgboost.png
 ├── src/
 │   ├── __init__.py                 # Package declaration
-│   ├── data_loader.py              # Data ingestion, validation & leak detection
+│   ├── data_loader.py              # Ingestion, validation & target leakage firewall
 │   ├── features.py                 # Pre-accident feature engineering
 │   ├── preprocessing.py            # ColumnTransformer & TargetEncoder
 │   ├── train.py                    # Stratified training & model comparison
 │   ├── evaluate.py                 # Imbalance-aware evaluation & comparison
-│   ├── predict.py                  # Single & batch inference pipeline
-│   └── visualization.py            # Visualization & chart generation
+│   ├── predict.py                  # Single & batch inference engine
+│   └── visualization.py            # Automated plot generation
 └── tests/
-    ├── test_data_validation.py     # Schema and leak detection tests
-    ├── test_preprocessing.py       # Imputation and encoding tests
-    └── test_prediction.py          # Inference and validation tests
+    ├── test_api.py                 # FastAPI endpoint tests
+    ├── test_data_validation.py     # Schema, missing values & leakage detection tests
+    ├── test_preprocessing.py       # Time parsing, flags & encoding tests
+    └── test_prediction.py          # Schema validation & inference tests
 ```
 
 ---
 
-## ⚖️ Model Limitations & Responsible AI
+## ⚙️ Installation & Quickstart
 
-### Limitations
-1. **Decision-Support Only**: Machine learning models estimate statistical associations, not definitive outcomes. Predictions must **never** be used as the sole operational basis for emergency dispatch or legal determinations.
-2. **Correlation vs. Causation**: High feature importance (e.g. speed limit, motorcycle travel) reflects statistical correlation with injury severity, not direct mathematical causality.
-3. **Contextual Omissions**: Factors such as driver intoxication, distraction, mechanical vehicle failure, and individual seatbelt compliance are frequently absent from public reporting.
+```bash
+# 1. Clone repository
+git clone https://github.com/your-username/road-accident-severity-predictor.git
+cd road-accident-severity-predictor
+
+# 2. Set up virtual environment
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On Linux / macOS:
+source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run tests
+pytest
+
+# 5. Launch web application
+streamlit run app.py
+```
 
 ---
 
-## 🛠️ Troubleshooting & FAQ
+## ⚖️ Responsible AI & Ethical Statement
 
-**Q: Running `pytest` gives `ModuleNotFoundError: No module named 'src'`?**  
-A: Run pytest with python module resolution: `python -m pytest` or set `PYTHONPATH=.`.
-
-**Q: Streamlit displays "Model Not Found"?**  
-A: Execute the training pipeline once: `python -m src.train` to generate `models/best_model.joblib`.
-
-**Q: Can I train on a custom real-world dataset?**  
-A: Yes! Place your CSV into `data/raw/`, ensure it has a target column (`accident_severity`), update `config/config.yaml`, and run `python -m src.train`.
-
----
-
-## 🔮 Future Roadmap
-
-- [ ] Add SHAP (SHapley Additive exPlanations) force plots for granular instance-level explainability.
-- [ ] Implement Bayesian Optimization (Optuna) for hyperparameter tuning.
-- [ ] Add a REST API endpoint via FastAPI with Docker containerization.
-- [ ] Incorporate geospatial mapping via Folium for accident hotspot density visualization.
+This application is an educational, analytical machine learning project. The predictions produced are **experimental statistical decision-support estimates** and must **never** be used as the sole operational basis for emergency service dispatch, automated driving decisions, or insurance liability determinations.
 
 ---
 
@@ -371,4 +327,4 @@ A: Yes! Place your CSV into `data/raw/`, ensure it has a target column (`acciden
 - **LinkedIn:** [linkedin.com/in/your-profile](https://linkedin.com/in/your-profile)  
 - **Email:** your.email@example.com  
 
-*Built with passion for reproducible, ethical machine learning and road safety analytics.*
+*Engineered with passion for reproducible, ethical machine learning and road safety analytics.*

@@ -59,3 +59,4 @@ def test_validate_dataset_leakage_detection():
     assert "number_of_casualties" in report["leakage_detected"]
     assert "hospital_status" in report["leakage_detected"]
     assert any("leakage" in w.lower() for w in report["warnings"])
+
