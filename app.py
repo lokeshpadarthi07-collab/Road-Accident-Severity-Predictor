@@ -97,6 +97,28 @@ def load_app_india_data():
         return None
 
 
+@st.cache_data
+def load_app_india_highway_routes():
+    """Load India highway network polylines for PathLayer with caching."""
+    from src.india_data import get_india_highway_routes
+    try:
+        return get_india_highway_routes()
+    except Exception as e:
+        st.error(f"Error loading India highway routes: {e}")
+        return []
+
+
+@st.cache_data
+def load_app_india_corridors():
+    """Load MoRTH blackspot corridors list with caching."""
+    from src.india_data import get_highway_corridors_list
+    try:
+        return get_highway_corridors_list()
+    except Exception as e:
+        st.error(f"Error loading highway corridors: {e}")
+        return []
+
+
 
 @st.cache_data
 def load_app_metadata():
@@ -555,60 +577,84 @@ elif page == "Batch Incident Scoring & Export":
 # PAGE: INDIA HIGHWAY ACCIDENTS & SAFETY AWARENESS MAP
 # -------------------------------------------------------------
 elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
-    st.subheader("🇮🇳 India Highway Accident Blackspots & 3D Safety Awareness Map")
+    st.subheader("🇮🇳 Map of India: National Highway Network & Critical Danger Areas")
     st.markdown("""
-    Interactive 3D geospatial intelligence mapping high-frequency collision blackspots across India's
-    National Highways and Expressways, grounded in official data from the **Ministry of Road Transport and Highways (MoRTH)**,
-    **Integrated Road Accident Database (iRAD)**, and **Indian Road Congress (IRC)**.
+    Interactive 3D geospatial intelligence visualizing **major National Highways & Expressways across India** 
+    alongside high-collision **Accident Danger Areas (Blackspots)**, grounded in official data from the 
+    **Ministry of Road Transport and Highways (MoRTH)**, **Integrated Road Accident Database (iRAD)**, and **Indian Road Congress (IRC)**.
     """)
 
     df_india = load_app_india_data()
-    if df_india is not None:
+    highway_routes = load_app_india_highway_routes()
+
+    if df_india is not None and len(df_india) > 0 and len(highway_routes) > 0:
         st.markdown("---")
-        st.markdown("#### 🔍 Search Any Highway, Area, or Blackspot in India")
+        st.markdown("#### 🛣️ Highway Corridor & Danger Area Selection")
 
-        # Interactive Search Bar & Quick Location Pills
-        search_query = st.text_input(
-            "Type an area, highway corridor, or city name:",
-            placeholder="e.g. Pune, Yamuna, Lonavala, Bengaluru, Gurgaon, Delhi, Ludhiana, Goa, Hyderabad, NH-44, NH-48",
-            value=""
-        )
+        hwy_names_list = ["All Indian Highways & Expressways"] + [h["highway_name"] for h in highway_routes]
 
-        st.caption("Quick Select Corridor / City:")
-        pill_cols = st.columns(6)
+        ctrl_col1, ctrl_col2 = st.columns([1.6, 1.4])
+        with ctrl_col1:
+            selected_hwy_dropdown = st.selectbox(
+                "Select National Highway / Expressway Corridor:",
+                hwy_names_list,
+                index=0
+            )
+        with ctrl_col2:
+            search_query = st.text_input(
+                "Or Search Any Area, City, Highway, or Hazard:",
+                placeholder="e.g. Pune, NH-44, Yamuna, Bhor Ghat, Bengaluru, Murthal, Goa, Ludhiana, NH-48",
+                value=""
+            )
+
+        st.caption("Quick Select Corridors & Hazardous Danger Stretches:")
+        pill_cols = st.columns(7)
         pill_selection = None
         with pill_cols[0]:
             if st.button("📍 All India", use_container_width=True):
                 pill_selection = ""
         with pill_cols[1]:
-            if st.button("📍 Mumbai-Pune (Lonavala)", use_container_width=True):
-                pill_selection = "Lonavala"
+            if st.button("📍 NH-44 (North-South)", use_container_width=True):
+                pill_selection = "NH-44"
         with pill_cols[2]:
-            if st.button("📍 Yamuna Expressway", use_container_width=True):
-                pill_selection = "Yamuna"
+            if st.button("📍 NH-48 (Delhi-Chennai)", use_container_width=True):
+                pill_selection = "NH-48"
         with pill_cols[3]:
-            if st.button("📍 Pune (Navale Bridge)", use_container_width=True):
-                pill_selection = "Navale"
+            if st.button("📍 Mumbai-Pune Exp", use_container_width=True):
+                pill_selection = "Mumbai-Pune"
         with pill_cols[4]:
-            if st.button("📍 Bengaluru (Silk Board)", use_container_width=True):
-                pill_selection = "Silk Board"
+            if st.button("📍 Yamuna Exp", use_container_width=True):
+                pill_selection = "Yamuna"
         with pill_cols[5]:
-            if st.button("📍 Delhi NCR (Murthal)", use_container_width=True):
-                pill_selection = "Murthal"
+            if st.button("📍 NH-66 (Goa Coast)", use_container_width=True):
+                pill_selection = "NH-66"
+        with pill_cols[6]:
+            if st.button("📍 Samruddhi Exp", use_container_width=True):
+                pill_selection = "Samruddhi"
 
-        active_query = pill_selection if pill_selection is not None else search_query.strip()
+        # Determine effective search term
+        if pill_selection is not None:
+            active_query = pill_selection
+        elif search_query.strip():
+            active_query = search_query.strip()
+        elif selected_hwy_dropdown != "All Indian Highways & Expressways":
+            # Extract highway id or short name
+            active_query = selected_hwy_dropdown.split(":")[0].strip()
+        else:
+            active_query = ""
 
-        # Filter dataset based on search
+        # Filter accident records based on selection
         if active_query:
             mask = (
                 df_india["area_name"].str.contains(active_query, case=False, na=False) |
                 df_india["highway_name"].str.contains(active_query, case=False, na=False) |
+                df_india["highway_id"].str.contains(active_query, case=False, na=False) |
                 df_india["state"].str.contains(active_query, case=False, na=False) |
                 df_india["primary_cause"].str.contains(active_query, case=False, na=False)
             )
             filtered_india = df_india[mask].copy()
             if len(filtered_india) == 0:
-                st.warning(f"No specific blackspot found matching '{active_query}'. Showing all India accident locations.")
+                st.warning(f"No specific blackspots found matching '{active_query}'. Displaying all India danger zones.")
                 filtered_india = df_india.copy()
                 is_filtered = False
             else:
@@ -619,7 +665,7 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
 
         st.markdown("---")
 
-        # Section A: Accident Counts and Statistics for the Searched Area
+        # Section A: Collision Statistics for Selected Corridor / Area
         total_accidents = len(filtered_india)
         fatal_count = sum(filtered_india["accident_severity"] == "Fatal")
         serious_count = sum(filtered_india["accident_severity"] == "Serious")
@@ -628,7 +674,8 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
         fatal_pct = (fatal_count / total_accidents * 100) if total_accidents > 0 else 0
         serious_pct = (serious_count / total_accidents * 100) if total_accidents > 0 else 0
 
-        st.markdown(f"### 📊 Collision Statistics: **{active_query if active_query else 'All India Highway Corridors'}**")
+        header_title = active_query if active_query else "All National Highways of India"
+        st.markdown(f"### 📊 Collision & Danger Profile: **{header_title}**")
         stat_c1, stat_c2, stat_c3, stat_c4 = st.columns(4)
         with stat_c1:
             st.metric("Total Accidents Recorded", f"{total_accidents:,}")
@@ -639,7 +686,7 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
         with stat_c4:
             st.metric("Minor / Slight Injuries", f"{slight_count:,}")
 
-        # Section B: Critical Safety Awareness Banner ("GO WITHIN LIMIT!")
+        # Section B: Critical Safety Awareness Banner ("GO WITHIN THE LIMIT!")
         if is_filtered and len(filtered_india) > 0:
             top_spot = filtered_india.iloc[0]
             posted_spd = top_spot["posted_speed_kmh"]
@@ -648,50 +695,54 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             area_title = top_spot["area_name"]
             hwy_title = top_spot["highway_name"]
             code = top_spot["morth_blackspot_id"]
+            d_level = top_spot.get("danger_level", "High Danger")
+            rect_status = top_spot.get("rectification_status", "Active enforcement and rumble strips installed.")
 
             st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #7f1d1d, #991b1b); color: white; padding: 20px; border-radius: 10px; margin: 15px 0; border-left: 8px solid #f87171; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
-                <div style="font-size: 1.35rem; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 8px;">
-                    🛑 CRITICAL ACCIDENT BLACKSPOT DETECTED — GO WITHIN THE LIMIT!
+            <div style="background: linear-gradient(135deg, #7f1d1d, #991b1b); color: white; padding: 22px; border-radius: 12px; margin: 15px 0; border-left: 8px solid #f87171; box-shadow: 0 4px 10px rgba(0,0,0,0.25);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 1.35rem; font-weight: 800; letter-spacing: 0.5px;">
+                        🛑 CRITICAL ACCIDENT DANGER AREA DETECTED — GO WITHIN THE LIMIT!
+                    </div>
+                    <span style="background: #ef4444; color: white; font-weight: 700; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem;">
+                        {d_level.upper()}
+                    </span>
                 </div>
-                <div style="font-size: 1.05rem; margin-bottom: 12px; line-height: 1.5;">
-                    In <strong>{area_title}</strong> on <strong>{hwy_title}</strong> (MoRTH ID: <code>{code}</code>), 
-                    collisions occur severely with high fatality rates.
+                <div style="font-size: 1.1rem; margin-bottom: 14px; line-height: 1.5;">
+                    Danger Stretch: <strong>{area_title}</strong> on <strong>{hwy_title}</strong> (MoRTH Blackspot Code: <code>{code}</code>)
                 </div>
-                <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 6px;">
-                    <div><strong>🚨 Posted Speed Limit:</strong> <span style="font-size: 1.2rem; color: #fca5a5;">{posted_spd} km/h</span></div>
-                    <div><strong>🟢 Mandatory Safe Advisory Speed:</strong> <span style="font-size: 1.3rem; font-weight: 900; color: #86efac; background: #064e3b; padding: 2px 8px; border-radius: 4px;">{safe_spd} km/h</span></div>
-                    <div><strong>⚠️ Critical Crash Hazard:</strong> <span style="color: #fef08a;">{cause}</span></div>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 14px; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 8px;">
+                    <div><strong>🚨 Posted Highway Speed:</strong> <span style="font-size: 1.25rem; color: #fca5a5; font-weight: bold;">{posted_spd} km/h</span></div>
+                    <div><strong>🟢 Mandatory Safe Speed:</strong> <span style="font-size: 1.35rem; font-weight: 900; color: #86efac; background: #064e3b; padding: 3px 10px; border-radius: 6px;">{safe_spd} km/h (GO WITHIN LIMIT)</span></div>
+                    <div style="flex: 1 1 100%;"><strong>⚠️ Primary Crash Hazard:</strong> <span style="color: #fef08a;">{cause}</span></div>
+                    <div style="flex: 1 1 100%;"><strong>🛠️ MoRTH/NHAI Engineering Intervention:</strong> <span style="color: #e0f2fe;">{rect_status}</span></div>
                 </div>
                 <div style="font-size: 0.95rem; font-weight: 600; color: #fef3c7;">
-                    📢 Driver Safety Awareness Directive: <em>SLOW DOWN to {safe_spd} km/h! Maintain a minimum 5-second following distance from heavy trucks, do not overtake on blind curves or ghat slopes, and take mandatory rest breaks to combat highway hypnosis.</em>
+                    📢 Driver Safety Awareness Directive: <em>SLOW DOWN to {safe_spd} km/h! Over 70% of fatal highway crashes in India stem from excessive speed. Maintain a 5-second safe gap behind heavy commercial trucks, avoid sharp lane-weaving, downshift on ghat descents, and take mandatory rest breaks every 2 hours to avoid highway hypnosis.</em>
                 </div>
             </div>
             """, unsafe_allow_html=True)
         else:
             st.info(
-                "💡 **Road Safety Awareness Directive**: In India, over 150,000 traffic fatalities occur annually, "
-                "with **speeding accounting for over 70% of fatal crashes** (MoRTH Report). Type any area or click a quick-select button above "
-                "to inspect its specific accident history, MoRTH blackspot classification, and mandatory advisory speed limits."
+                "💡 **MoRTH Road Safety Directive**: In India, over **150,000 road fatalities** occur every year across National Highways "
+                "and Expressways. **Speeding accounts for over 70% of fatal collisions** (MoRTH Annual Report). "
+                "Select any highway corridor from the dropdown or click a quick-select button above to inspect its exact route, "
+                "danger blackspots, and mandatory safe speed limits."
             )
 
-        # Section C: 3D Geospatial Objects & Visible Accident Prone Locations on Map
+        # Section C: Interactive Map Controls
         st.markdown("---")
-        st.markdown("#### 🗺️ 3D Collision Blackspot Objects & Prone Area Location Labels")
+        st.markdown("#### 🗺️ Map of India: Highway Network Routes & Danger Blackspots")
 
-        map_col_ctrl1, map_col_ctrl2, map_col_ctrl3, map_col_ctrl4 = st.columns([1.5, 1, 1, 1])
-        with map_col_ctrl1:
-            object_type = st.radio(
-                "3D Object Mode:",
-                ["3D Extruded Pillars (ColumnLayer)", "3D Spatial Density Towers (HexagonLayer)"],
-                horizontal=True
-            )
-        with map_col_ctrl2:
-            elev_scale = st.slider("3D Pillar Height:", min_value=10, max_value=100, value=40)
-        with map_col_ctrl3:
-            show_labels = st.checkbox("🏷️ Show Area Labels on Map", value=True)
-        with map_col_ctrl4:
-            show_rings = st.checkbox("⭕ Show Danger Rings", value=True)
+        map_c1, map_c2, map_c3, map_c4 = st.columns([1.3, 1.1, 1.1, 1.1])
+        with map_c1:
+            show_highways = st.checkbox("🛣️ Show Highway Routes (PathLayer)", value=True)
+        with map_c2:
+            show_pillars = st.checkbox("🗼 Show 3D Danger Pillars (ColumnLayer)", value=True)
+        with map_c3:
+            show_rings = st.checkbox("⭕ Show Danger Warning Rings", value=True)
+        with map_c4:
+            show_labels = st.checkbox("🏷️ Show Danger Badges", value=True)
 
         # Build blackspot area nodes for on-map location callouts
         area_summary_list = []
@@ -699,53 +750,111 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             tot = len(grp)
             fat = sum(grp["accident_severity"] == "Fatal")
             adv_spd = grp["advisory_safe_speed_kmh"].iloc[0]
+            d_lvl = grp["danger_level"].iloc[0] if "danger_level" in grp.columns else "High Danger"
             hwy = grp["highway_name"].iloc[0].split("(")[0].strip()
             area_summary_list.append({
                 "area_name": aname,
                 "highway_name": hwy,
+                "danger_level": d_lvl,
                 "latitude": float(grp["latitude"].mean()),
                 "longitude": float(grp["longitude"].mean()),
                 "total_accidents": tot,
                 "fatal_accidents": fat,
                 "advisory_speed": adv_spd,
-                "map_label": f"⚠️ {aname.split('(')[0].strip()}\n{tot} Crashes ({fat} Fatal) | Go ≤ {adv_spd} km/h"
+                "map_label": f"⚠️ {aname.split('(')[0].strip()}\n{tot} Crashes ({fat} Fatal) | GO ≤ {adv_spd} km/h"
             })
         blackspots_nodes_df = pd.DataFrame(area_summary_list)
 
-        # Map View Calculation
-        if len(filtered_india) > 0:
+        # Prepare Highway Network PathLayer Data
+        path_records = []
+        for h in highway_routes:
+            # Check if this highway is active
+            h_matched = False
+            if active_query:
+                if (active_query.lower() in h["short_name"].lower() or 
+                    active_query.lower() in h["highway_name"].lower() or 
+                    active_query.lower() in h["highway_id"].lower()):
+                    h_matched = True
+
+            if is_filtered and h_matched:
+                line_color = [239, 68, 68, 255]     # Highlight in vibrant red
+                line_width = 8
+            elif is_filtered and not h_matched:
+                line_color = [100, 116, 139, 120]   # Subtle gray background
+                line_width = 2
+            else:
+                line_color = h["color"]              # Standard distinct color
+                line_width = 4
+
+            path_records.append({
+                "highway_id": h["highway_id"],
+                "highway_name": h["highway_name"],
+                "short_name": h["short_name"],
+                "category": h["category"],
+                "length_km": h["length_km"],
+                "danger_level": h["danger_level"],
+                "total_blackspots": h["total_blackspots"],
+                "description": h["description"],
+                "color": line_color,
+                "width": line_width,
+                "path": h["path"]
+            })
+
+        # Calculate Camera Viewport
+        if is_filtered and len(filtered_india) > 0:
             center_lat = float(np.mean(filtered_india["latitude"]))
             center_lon = float(np.mean(filtered_india["longitude"]))
-            zoom = 11.2 if is_filtered else 5.2
+            zoom = 9.8 if len(filtered_india) < 600 else 6.5
+            pitch = 45
         else:
-            center_lat, center_lon, zoom = 20.5937, 78.9629, 5.0
+            center_lat, center_lon, zoom = 22.0, 79.0, 4.6
+            pitch = 38
 
         view_state = pdk.ViewState(
             latitude=center_lat,
             longitude=center_lon,
             zoom=zoom,
-            pitch=50,  # 3D tilted camera angle
-            bearing=15
+            pitch=pitch,
+            bearing=10
         )
 
         layers_to_render = []
 
-        if object_type.startswith("3D Extruded Pillars"):
+        # Layer 1: Highway Network Polylines (PathLayer)
+        if show_highways and len(path_records) > 0:
+            highway_layer = pdk.Layer(
+                "PathLayer",
+                data=path_records,
+                get_path="path",
+                get_color="color",
+                get_width="width",
+                width_scale=20,
+                width_min_pixels=3,
+                width_max_pixels=14,
+                rounded=True,
+                joint_rounded=True,
+                pickable=True,
+                auto_highlight=True,
+            )
+            layers_to_render.append(highway_layer)
+
+        # Layer 2: 3D Danger Blackspots (ColumnLayer)
+        if show_pillars and len(filtered_india) > 0:
             def get_elevation(row):
                 sev = row["accident_severity"]
                 spd = row["recorded_speed_kmh"]
                 if sev == "Fatal":
-                    return 1800 + (spd * 12)
+                    return 2400 + (spd * 14)
                 elif sev == "Serious":
-                    return 900 + (spd * 6)
-                return 300 + (spd * 2)
+                    return 1200 + (spd * 8)
+                return 400 + (spd * 3)
 
             def get_pillar_color(sev):
                 if sev == "Fatal":
-                    return [239, 68, 68, 220]     # Red
+                    return [239, 68, 68, 230]     # Red
                 elif sev == "Serious":
-                    return [249, 115, 22, 190]   # Orange
-                return [234, 179, 8, 160]        # Yellow
+                    return [249, 115, 22, 200]   # Orange
+                return [234, 179, 8, 170]        # Yellow
 
             plot_df = filtered_india.copy()
             plot_df["elevation"] = plot_df.apply(get_elevation, axis=1)
@@ -756,8 +865,8 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 data=plot_df,
                 get_position=["longitude", "latitude"],
                 get_elevation="elevation",
-                elevation_scale=elev_scale / 25,
-                radius=600 if not is_filtered else 180,
+                elevation_scale=1.5,
+                radius=650 if not is_filtered else 220,
                 get_fill_color="color",
                 pickable=True,
                 auto_highlight=True,
@@ -765,48 +874,15 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             )
             layers_to_render.append(layer_3d)
 
-            tooltip_dict = {
-                "html": (
-                    "<div style='background-color: #0f172a; color: white; padding: 10px; border-radius: 6px; font-family: sans-serif;'>"
-                    "<b style='color: #38bdf8; font-size: 1.1rem;'>{area_name}</b><br/>"
-                    "<b>Highway:</b> {highway_name}<br/>"
-                    "<b>State:</b> {state}<br/>"
-                    "<b>Severity:</b> <span style='color: #f87171; font-weight: bold;'>{accident_severity}</span><br/>"
-                    "<b>Recorded Speed:</b> {recorded_speed_kmh} km/h (Posted: {posted_speed_kmh} km/h)<br/>"
-                    "<b style='color: #4ade80;'>Advisory Safe Speed:</b> <b>{advisory_safe_speed_kmh} km/h (GO WITHIN LIMIT)</b><br/>"
-                    "<b>Key Hazard:</b> {primary_cause}<br/>"
-                    "<small style='color: #94a3b8;'>MoRTH Blackspot Code: {morth_blackspot_id}</small>"
-                    "</div>"
-                ),
-                "style": {"backgroundColor": "transparent"}
-            }
-
-        else:
-            layer_3d = pdk.Layer(
-                "HexagonLayer",
-                data=filtered_india,
-                get_position=["longitude", "latitude"],
-                radius=1500 if not is_filtered else 350,
-                elevation_scale=elev_scale * 1.5,
-                elevation_range=[0, 3000],
-                pickable=True,
-                extruded=True,
-            )
-            layers_to_render.append(layer_3d)
-            tooltip_dict = {
-                "html": "<b>Cluster Density:</b> {elevationValue} collisions recorded",
-                "style": {"backgroundColor": "#1e3a8a", "color": "white"}
-            }
-
-        # Add Danger Perimeter Radii (Warning Rings)
+        # Layer 3: Danger Perimeter Radii (ScatterplotLayer)
         if show_rings and len(blackspots_nodes_df) > 0:
             ring_layer = pdk.Layer(
                 "ScatterplotLayer",
                 data=blackspots_nodes_df,
                 get_position=["longitude", "latitude"],
-                get_radius=3200 if not is_filtered else 900,
-                get_fill_color=[239, 68, 68, 35],
-                get_line_color=[239, 68, 68, 240],
+                get_radius=3400 if not is_filtered else 1100,
+                get_fill_color=[239, 68, 68, 40],
+                get_line_color=[239, 68, 68, 255],
                 stroked=True,
                 filled=True,
                 line_width_min_pixels=2.5,
@@ -814,7 +890,7 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             )
             layers_to_render.append(ring_layer)
 
-        # Add Visible Floating Text Labels for Accident Prone Areas
+        # Layer 4: On-Map Danger Badges (TextLayer)
         if show_labels and len(blackspots_nodes_df) > 0:
             text_layer = pdk.Layer(
                 "TextLayer",
@@ -823,16 +899,34 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 get_text="map_label",
                 get_size=11 if not is_filtered else 13,
                 get_color=[255, 255, 255, 255],
-                get_background_color=[15, 23, 42, 230],
+                get_background_color=[15, 23, 42, 235],
                 get_alignment_baseline="'bottom'",
                 get_text_anchor="'middle'",
-                get_pixel_offset=[0, -35],
+                get_pixel_offset=[0, -32],
                 background_padding=[4, 8],
                 font_family="system-ui, sans-serif",
                 font_weight="bold",
                 pickable=True,
             )
             layers_to_render.append(text_layer)
+
+        # Interactive Map Tooltip for DeckGL
+        tooltip_dict = {
+            "html": (
+                "<div style='background-color: #0f172a; color: white; padding: 12px; border-radius: 8px; font-family: system-ui, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-width: 320px;'>"
+                "{area_name}"
+                "<div style='font-size: 0.9rem; margin-top: 4px;'>"
+                "<b>Highway:</b> {highway_name}<br/>"
+                "<b>Severity:</b> <span style='color: #f87171; font-weight: bold;'>{accident_severity}</span><br/>"
+                "<b>Recorded Speed:</b> {recorded_speed_kmh} km/h (Posted: {posted_speed_kmh} km/h)<br/>"
+                "<b style='color: #4ade80;'>Advisory Safe Speed:</b> <b>{advisory_safe_speed_kmh} km/h</b><br/>"
+                "<b>Danger Hazard:</b> <span style='color: #fde047;'>{primary_cause}</span><br/>"
+                "<small style='color: #94a3b8;'>MoRTH Code: {morth_blackspot_id}</small>"
+                "</div>"
+                "</div>"
+            ),
+            "style": {"backgroundColor": "transparent"}
+        }
 
         st.pydeck_chart(
             pdk.Deck(
@@ -842,29 +936,46 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 tooltip=tooltip_dict
             )
         )
-        st.caption(f"Showing {len(filtered_india):,} accident records across India in 3D perspective with accident-prone location callout badges and danger perimeter rings.")
+        st.caption(
+            f"Displaying **{len(path_records)} National Highway & Expressway corridors** traversing India and "
+            f"**{len(filtered_india):,} accident records** with 3D collision towers and MoRTH blackspot danger perimeters."
+        )
 
-        # Section D: MoRTH Official Blackspots Safety Registry Table
+        # Section D: Indian National Highway Danger Registry & Corridor Comparison
         st.markdown("---")
-        st.markdown("#### 📋 MoRTH National Highway Blackspot Safety Registry & Rectification Measures")
+        st.markdown("#### 📋 India National Highways & Expressways Danger Registry")
+        st.markdown("""
+        Comparative safety analysis of India's arterial transit corridors based on MoRTH annual blackspot registries,
+        recorded fatality ratios, and primary collision mechanics.
+        """)
 
-        blackspots_summary = [
-            {"MoRTH Blackspot Code": "MH-EXP-001", "Highway / Corridor": "Mumbai-Pune Expressway", "Area / Stretch": "Lonavala / Khandala (Bhor Ghat)", "State": "Maharashtra", "Advisory Speed": "50 km/h", "Key Hazard": "Steep slope descent, truck brake fade", "Safety Directive": "Mandatory gear lock, brake check bays"},
-            {"MoRTH Blackspot Code": "UP-EXP-014", "Highway / Corridor": "Yamuna Expressway", "Area / Stretch": "Zero Point Greater Noida / Dankaur", "State": "Uttar Pradesh", "Advisory Speed": "75 km/h", "Key Hazard": "Highway hypnosis, tire bursts on concrete", "Safety Directive": "Nitrogen air stations, speed rumblers"},
-            {"MoRTH Blackspot Code": "MH-NH48-038", "Highway / Corridor": "NH-48 (Pune Bypass)", "Area / Stretch": "Navale Bridge to Katraj Tunnel", "State": "Maharashtra", "Advisory Speed": "40 km/h", "Key Hazard": "Steep gradient descent, stationary traffic", "Safety Directive": "Chicane barriers, speed radar cameras"},
-            {"MoRTH Blackspot Code": "HR-NH48-011", "Highway / Corridor": "NH-48 (Delhi-Jaipur)", "Area / Stretch": "Khedki Daula / Bilaspur Chowk", "State": "Haryana", "Advisory Speed": "50 km/h", "Key Hazard": "Pedestrian/two-wheeler illegal crossing", "Safety Directive": "Vehicular Underpasses (VUP), high fencing"},
-            {"MoRTH Blackspot Code": "PB-NH44-007", "Highway / Corridor": "NH-44 (North Corridor)", "Area / Stretch": "Sherpur Chowk (Ludhiana)", "State": "Punjab", "Advisory Speed": "45 km/h", "Key Hazard": "Dense commercial city bypass congestion", "Safety Directive": "Flyover expansion, service lane segregation"},
-            {"MoRTH Blackspot Code": "HR-NH44-019", "Highway / Corridor": "NH-44 (Delhi-Haryana)", "Area / Stretch": "Murthal - Panipat Corridor", "State": "Haryana", "Advisory Speed": "60 km/h", "Key Hazard": "Night speeding, radiation winter fog pileups", "Safety Directive": "High-intensity blinkers, retro-reflective signs"},
-            {"MoRTH Blackspot Code": "KA-NH48-004", "Highway / Corridor": "NH-48 (Bengaluru-Hosur)", "Area / Stretch": "Silk Board & Electronic City Descent", "State": "Karnataka", "Advisory Speed": "40 km/h", "Key Hazard": "Abrupt ramp merges, two-wheeler weaving", "Safety Directive": "Lane barricades, speed calming speed-tables"},
-            {"MoRTH Blackspot Code": "TG-ORR-002", "Highway / Corridor": "Hyderabad Outer Ring Road", "Area / Stretch": "Shamshabad Airport Loop", "State": "Telangana", "Advisory Speed": "70 km/h", "Key Hazard": "Excessive speeding, stationary truck crashes", "Safety Directive": "Automated Number Plate Recognition (ANPR) speed traps"},
-            {"MoRTH Blackspot Code": "MH-NH66-021", "Highway / Corridor": "NH-66 (Mumbai-Goa)", "Area / Stretch": "Kashedi Ghat & Chiplun Curves", "State": "Maharashtra", "Advisory Speed": "35 km/h", "Key Hazard": "Blind hairpin bends, valley drops", "Safety Directive": "Kashedi twin tunnels, crash barriers"},
-            {"MoRTH Blackspot Code": "MH-EXP-088", "Highway / Corridor": "Samruddhi Mahamarg", "Area / Stretch": "Buldhana - Chhatrapati Sambhajinagar", "State": "Maharashtra", "Advisory Speed": "80 km/h", "Key Hazard": "Hypnosis, high-speed tire blowouts", "Safety Directive": "Rumble strips every 10 km, resting plazas"}
-        ]
-        st.dataframe(pd.DataFrame(blackspots_summary), use_container_width=True)
-        st.caption("Grounded in official statistics from the Ministry of Road Transport and Highways (MoRTH) Road Accidents in India Annual Report & iRAD portal.")
+        hwy_summary_rows = []
+        corridors_list = load_app_india_corridors()
+        for h in highway_routes:
+            hid = h["highway_id"]
+            # Find matching blackspots in dataset
+            matched_spots = [c for c in corridors_list if c.get("highway_id") == hid]
+            danger_spots_names = ", ".join([s["area_name"].split("(")[0].strip() for s in matched_spots]) if matched_spots else "General Corridor Stretch"
+            primary_hz = matched_spots[0]["primary_cause"] if matched_spots else h["description"]
+            adv_spd = f"{matched_spots[0]['advisory_speed']} km/h" if matched_spots else "60-80 km/h"
+
+            hwy_summary_rows.append({
+                "Highway Corridor": h["short_name"],
+                "Category": h["category"],
+                "Length (km)": f"{h['length_km']:,} km",
+                "Danger Classification": h["danger_level"],
+                "Critical Danger Areas": danger_spots_names,
+                "Advisory Safe Speed": adv_spd,
+                "Primary Collision Mechanics": primary_hz
+            })
+
+        df_hwy_summary = pd.DataFrame(hwy_summary_rows)
+        st.dataframe(df_hwy_summary, use_container_width=True)
+
+        st.caption("Grounded in official statistics from the Ministry of Road Transport and Highways (MoRTH) Road Accidents in India Annual Report, IRC-SP-44, and iRAD portal.")
 
     else:
-        st.error("India accident blackspots dataset could not be loaded.")
+        st.error("India accident blackspots and highway network dataset could not be loaded.")
 
 
 # -------------------------------------------------------------
