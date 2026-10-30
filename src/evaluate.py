@@ -156,3 +156,72 @@ def load_evaluation_report(
         return None
     with open(report_path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def main():
+    """Execute standalone evaluation of trained models on processed test data."""
+    import joblib
+    from src.data_loader import load_config
+    from src.preprocessing import load_preprocessor_artifacts
+
+    config = load_config()
+    test_path = config["paths"]["processed_test"]
+    if not os.path.exists(test_path):
+        print(f"Test data not found at {test_path}. Run 'python -m src.train' first.")
+        return
+
+    test_df = pd.read_parquet(test_path)
+    target_col = config["data"]["target_column"]
+    X_test = test_df.drop(columns=[target_col])
+    y_test = test_df[target_col]
+
+    preprocessor, target_encoder = load_preprocessor_artifacts(
+        config["paths"]["preprocessor_path"],
+        config["paths"]["label_encoder_path"]
+    )
+
+    X_test_trans = preprocessor.transform(X_test)
+    y_test_enc = target_encoder.transform(y_test)
+    class_names = list(target_encoder.classes_)
+
+    results_summary = {}
+
+    # 1. Best / Champion Model
+    best_model_path = config["paths"]["best_model_path"]
+    if os.path.exists(best_model_path):
+        best_model = joblib.load(best_model_path)
+        y_pred = best_model.predict(X_test_trans)
+        y_proba = best_model.predict_proba(X_test_trans) if hasattr(best_model, "predict_proba") else None
+        res = evaluate_classifier(y_test_enc, y_pred, y_proba, class_names=class_names)
+        results_summary["Champion Model"] = res
+
+    # 2. Random Forest
+    rf_path = os.path.join(config["paths"]["models_dir"], "random_forest.joblib")
+    if os.path.exists(rf_path):
+        rf_model = joblib.load(rf_path)
+        y_pred = rf_model.predict(X_test_trans)
+        y_proba = rf_model.predict_proba(X_test_trans) if hasattr(rf_model, "predict_proba") else None
+        res = evaluate_classifier(y_test_enc, y_pred, y_proba, class_names=class_names)
+        results_summary["Random Forest"] = res
+
+    # 3. XGBoost
+    xgb_path = os.path.join(config["paths"]["models_dir"], "xgboost.joblib")
+    if os.path.exists(xgb_path):
+        xgb_model = joblib.load(xgb_path)
+        y_pred = xgb_model.predict(X_test_trans)
+        y_proba = xgb_model.predict_proba(X_test_trans) if hasattr(xgb_model, "predict_proba") else None
+        res = evaluate_classifier(y_test_enc, y_pred, y_proba, class_names=class_names)
+        results_summary["XGBoost"] = res
+
+    comp_df = generate_comparison_table(results_summary)
+    print("\n" + "="*70)
+    print("ROAD ACCIDENT SEVERITY PREDICTOR — MODEL EVALUATION BENCHMARK")
+    print("="*70)
+    print(comp_df.to_string(index=False))
+    print("="*70 + "\n")
+
+
+if __name__ == "__main__":
+    main()
+
+
