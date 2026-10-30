@@ -675,25 +675,48 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 "to inspect its specific accident history, MoRTH blackspot classification, and mandatory advisory speed limits."
             )
 
-        # Section C: 3D Geospatial Objects on Map (PyDeck ColumnLayer & Extrusion)
+        # Section C: 3D Geospatial Objects & Visible Accident Prone Locations on Map
         st.markdown("---")
-        st.markdown("#### 🗺️ 3D Collision Blackspot Objects (Pillar Heights = Collision Severity)")
+        st.markdown("#### 🗺️ 3D Collision Blackspot Objects & Prone Area Location Labels")
 
-        map_col_ctrl1, map_col_ctrl2 = st.columns([2, 1])
+        map_col_ctrl1, map_col_ctrl2, map_col_ctrl3, map_col_ctrl4 = st.columns([1.5, 1, 1, 1])
         with map_col_ctrl1:
             object_type = st.radio(
-                "Select 3D Object Rendering Mode:",
+                "3D Object Mode:",
                 ["3D Extruded Pillars (ColumnLayer)", "3D Spatial Density Towers (HexagonLayer)"],
                 horizontal=True
             )
         with map_col_ctrl2:
-            elev_scale = st.slider("3D Pillar Height Scaling:", min_value=10, max_value=100, value=40)
+            elev_scale = st.slider("3D Pillar Height:", min_value=10, max_value=100, value=40)
+        with map_col_ctrl3:
+            show_labels = st.checkbox("🏷️ Show Area Labels on Map", value=True)
+        with map_col_ctrl4:
+            show_rings = st.checkbox("⭕ Show Danger Rings", value=True)
+
+        # Build blackspot area nodes for on-map location callouts
+        area_summary_list = []
+        for aname, grp in filtered_india.groupby("area_name"):
+            tot = len(grp)
+            fat = sum(grp["accident_severity"] == "Fatal")
+            adv_spd = grp["advisory_safe_speed_kmh"].iloc[0]
+            hwy = grp["highway_name"].iloc[0].split("(")[0].strip()
+            area_summary_list.append({
+                "area_name": aname,
+                "highway_name": hwy,
+                "latitude": float(grp["latitude"].mean()),
+                "longitude": float(grp["longitude"].mean()),
+                "total_accidents": tot,
+                "fatal_accidents": fat,
+                "advisory_speed": adv_spd,
+                "map_label": f"⚠️ {aname.split('(')[0].strip()}\n{tot} Crashes ({fat} Fatal) | Go ≤ {adv_spd} km/h"
+            })
+        blackspots_nodes_df = pd.DataFrame(area_summary_list)
 
         # Map View Calculation
         if len(filtered_india) > 0:
             center_lat = float(np.mean(filtered_india["latitude"]))
             center_lon = float(np.mean(filtered_india["longitude"]))
-            zoom = 11.5 if is_filtered else 5.2
+            zoom = 11.2 if is_filtered else 5.2
         else:
             center_lat, center_lon, zoom = 20.5937, 78.9629, 5.0
 
@@ -705,8 +728,9 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
             bearing=15
         )
 
+        layers_to_render = []
+
         if object_type.startswith("3D Extruded Pillars"):
-            # Assign 3D height and color based on severity
             def get_elevation(row):
                 sev = row["accident_severity"]
                 spd = row["recorded_speed_kmh"]
@@ -739,6 +763,7 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 auto_highlight=True,
                 extruded=True,
             )
+            layers_to_render.append(layer_3d)
 
             tooltip_dict = {
                 "html": (
@@ -767,20 +792,57 @@ elif page == "🇮🇳 India Highway Accidents & Safety Awareness Map":
                 pickable=True,
                 extruded=True,
             )
+            layers_to_render.append(layer_3d)
             tooltip_dict = {
                 "html": "<b>Cluster Density:</b> {elevationValue} collisions recorded",
                 "style": {"backgroundColor": "#1e3a8a", "color": "white"}
             }
 
+        # Add Danger Perimeter Radii (Warning Rings)
+        if show_rings and len(blackspots_nodes_df) > 0:
+            ring_layer = pdk.Layer(
+                "ScatterplotLayer",
+                data=blackspots_nodes_df,
+                get_position=["longitude", "latitude"],
+                get_radius=3200 if not is_filtered else 900,
+                get_fill_color=[239, 68, 68, 35],
+                get_line_color=[239, 68, 68, 240],
+                stroked=True,
+                filled=True,
+                line_width_min_pixels=2.5,
+                pickable=True,
+            )
+            layers_to_render.append(ring_layer)
+
+        # Add Visible Floating Text Labels for Accident Prone Areas
+        if show_labels and len(blackspots_nodes_df) > 0:
+            text_layer = pdk.Layer(
+                "TextLayer",
+                data=blackspots_nodes_df,
+                get_position=["longitude", "latitude"],
+                get_text="map_label",
+                get_size=11 if not is_filtered else 13,
+                get_color=[255, 255, 255, 255],
+                get_background_color=[15, 23, 42, 230],
+                get_alignment_baseline="'bottom'",
+                get_text_anchor="'middle'",
+                get_pixel_offset=[0, -35],
+                background_padding=[4, 8],
+                font_family="system-ui, sans-serif",
+                font_weight="bold",
+                pickable=True,
+            )
+            layers_to_render.append(text_layer)
+
         st.pydeck_chart(
             pdk.Deck(
                 map_style="mapbox://styles/mapbox/dark-v10",
                 initial_view_state=view_state,
-                layers=[layer_3d],
+                layers=layers_to_render,
                 tooltip=tooltip_dict
             )
         )
-        st.caption(f"Showing {len(filtered_india):,} accident records across India in 3D perspective. Red/Orange elevated 3D pillars indicate high-severity blackspot clusters.")
+        st.caption(f"Showing {len(filtered_india):,} accident records across India in 3D perspective with accident-prone location callout badges and danger perimeter rings.")
 
         # Section D: MoRTH Official Blackspots Safety Registry Table
         st.markdown("---")
