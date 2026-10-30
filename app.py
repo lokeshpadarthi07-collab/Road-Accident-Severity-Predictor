@@ -89,9 +89,11 @@ def load_app_data():
 @st.cache_data
 def load_app_india_data():
     """Load India accident blackspots dataset with caching."""
-    from src.india_data import load_india_accidents_dataset
+    import importlib
+    import src.india_data
+    importlib.reload(src.india_data)
     try:
-        return load_india_accidents_dataset()
+        return src.india_data.load_india_accidents_dataset()
     except Exception as e:
         st.error(f"Error loading India accident dataset: {e}")
         return None
@@ -100,23 +102,27 @@ def load_app_india_data():
 @st.cache_data
 def load_app_india_highway_routes():
     """Load India highway network polylines for PathLayer with caching."""
-    from src.india_data import get_india_highway_routes
+    import importlib
+    import src.india_data
+    importlib.reload(src.india_data)
     try:
-        return get_india_highway_routes()
+        return src.india_data.get_india_highway_routes()
     except Exception as e:
         st.error(f"Error loading India highway routes: {e}")
-        return []
+        return src.india_data.INDIA_HIGHWAY_NETWORKS if hasattr(src.india_data, "INDIA_HIGHWAY_NETWORKS") else []
 
 
 @st.cache_data
 def load_app_india_corridors():
     """Load MoRTH blackspot corridors list with caching."""
-    from src.india_data import get_highway_corridors_list
+    import importlib
+    import src.india_data
+    importlib.reload(src.india_data)
     try:
-        return get_highway_corridors_list()
+        return src.india_data.get_highway_corridors_list()
     except Exception as e:
         st.error(f"Error loading highway corridors: {e}")
-        return []
+        return src.india_data.INDIA_HIGHWAY_CORRIDORS if hasattr(src.india_data, "INDIA_HIGHWAY_CORRIDORS") else []
 
 
 
