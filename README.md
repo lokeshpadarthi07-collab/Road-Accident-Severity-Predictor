@@ -134,7 +134,6 @@ streamlit run app.py
 5. **Geospatial Hotspot Map**: 3D PyDeck visualization featuring hexagonal incident clustering and class-colored scatter points.
 6. **Model Performance**: Full comparative benchmark table against the Dummy Baseline, confusion matrix heatmaps, and top feature importances.
 7. **Data Insights**: Risk distributions across weather, road surface, and speed limits.
-8. **About the Project**: System architecture, data leakage firewall explanation, and ethical statements.
 
 ---
 

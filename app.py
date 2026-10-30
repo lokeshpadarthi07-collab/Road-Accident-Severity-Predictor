@@ -118,8 +118,7 @@ page = st.sidebar.radio(
         "Batch Incident Scoring & Export",
         "Geospatial Hotspot Map",
         "Model Performance",
-        "Data Insights",
-        "About the Project"
+        "Data Insights"
     ],
     index=0
 )
@@ -714,42 +713,3 @@ elif page == "Data Insights":
             if os.path.exists(fig_day):
                 st.image(fig_day, use_container_width=True)
 
-
-# -------------------------------------------------------------
-# PAGE 8: ABOUT THE PROJECT
-# -------------------------------------------------------------
-elif page == "About the Project":
-    st.subheader("About the Road Accident Severity Predictor")
-
-    st.markdown("""
-    ### 🎯 Problem Statement
-    Road traffic collisions represent one of the leading global causes of preventable injury and death.
-    The goal of this system is to predict **accident severity** (`Slight`, `Serious`, `Fatal`) based on
-    **pre-accident conditions** (weather, lighting, speed limits, road geometry, and vehicle categories).
-
-    ---
-
-    ### 🛡️ Preventing Target Leakage
-    A critical engineering requirement in accident modeling is **target leakage prevention**:
-    - **Valid Predictors**: Speed limit, weather, lighting, road type, time of day, vehicle type.
-    - **Prohibited Predictors (Target Leakage)**: `number_of_casualties`, `casualty_severity`, `hospital_arrival_time`,
-      `airbag_deployment_count`, or `vehicle_damage_cost`. These observations only occur **after** the crash.
-      Including them causes artificial 99% test accuracy while rendering the model completely invalid for pre-collision risk estimation.
-
-    ---
-
-    ### 🛠️ Technology Stack
-    - **Core ML**: Scikit-Learn, XGBoost, NumPy, Pandas
-    - **API Microservice**: FastAPI, Pydantic v2, Uvicorn
-    - **Web Application & Geospatial**: Streamlit, PyDeck
-    - **Visualizations**: Matplotlib, Seaborn
-    - **Serialization**: Joblib, PyYAML
-    - **Testing & CI/CD**: Pytest (14 passing unit & API tests), GitHub Actions
-
-    ---
-
-    ### ⚖️ Responsible AI & Ethical Disclaimer
-    This application is an educational, analytical machine learning project. The predictions produced are
-    **experimental statistical estimates** and must **never** be used as the sole operational basis for
-    emergency service dispatch, real-time routing, or insurance liability determinations.
-    """)
